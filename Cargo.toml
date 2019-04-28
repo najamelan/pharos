@@ -1,0 +1,22 @@
+# Auto-generated from "Cargo.yml"
+[dependencies]
+failure = "^0.1"
+
+[dependencies.futures-preview]
+default-features = false
+features = ["nightly", "std"]
+version = "^0.3.0-alpha.15"
+
+[dependencies.hashbrown]
+optional = true
+version = "^0.3"
+
+[features]
+blanket = ["hashbrown"]
+default = ["blanket"]
+
+[package]
+authors = ["Naja Melan <najamelan@autistici.org>"]
+edition = "2018"
+name = "thespis"
+version = "0.1.0"
