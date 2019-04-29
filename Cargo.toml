@@ -12,10 +12,10 @@ version = "^0.3.0-alpha.15"
 
 [package]
 authors = ["Naja Melan <najamelan@autistici.org>"]
-categories = ["Asynchronous"]
+categories = ["asynchronous"]
 description = "Observer pattern which generates a futures 0.3 stream of events"
 edition = "2018"
-keywords = ["observer", "futures", "stream", "broadcast", "publish/subscribe", "Gang of Four Design Pattern"]
+keywords = ["observer", "futures", "stream", "broadcast", "publish_subscribe"]
 license = "Unlicense"
 name = "pharos"
 readme = "README.md"

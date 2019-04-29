@@ -2,9 +2,9 @@ use crate :: { import::* };
 
 
 /// The Pharos lighthouse. When you implement Observable on your type, you can forward
-/// the [observe] method to Pharos and call notify on it.
+/// the [`observe`](Pharos::observe) method to Pharos and call notify on it.
 ///
-/// You can of course create several Pharos (I know, historical sacrilege) for (different) types
+/// You can of course create several `Pharos` (I know, historical sacrilege) for (different) types
 /// of events.
 //
 #[ derive( Clone, Debug ) ]

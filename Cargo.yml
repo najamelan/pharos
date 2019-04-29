@@ -9,8 +9,8 @@ package:
 
   repository  : https://github.com/najamelan/pharos
   description : Observer pattern which generates a futures 0.3 stream of events
-  categories  : [ Asynchronous ]
-  keywords    : [ observer, futures, stream, broadcast, "publish/subscribe", "Gang of Four Design Pattern" ]
+  categories  : [ asynchronous ]
+  keywords    : [ observer, futures, stream, broadcast, publish_subscribe ]
 
 
 badges:

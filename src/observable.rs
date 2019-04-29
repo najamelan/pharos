@@ -1,6 +1,6 @@
 use crate :: { import::* };
 
-/// Indicate that a type is observable. You can call [observe] to get a
+/// Indicate that a type is observable. You can call [`observe`](Observable::observe) to get a
 /// stream of events.
 //
 pub trait Observable<Event>
@@ -15,7 +15,7 @@ pub trait Observable<Event>
 }
 
 
-/// Indicate that a type is observable through an unbounded stream. You can call [observe_unbounded]
+/// Indicate that a type is observable through an unbounded stream. You can call [`observe_unbounded`](UnboundedObservable::observe_unbounded)
 /// to get a stream of events.
 //
 pub trait UnboundedObservable<Event>

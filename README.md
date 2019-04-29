@@ -5,11 +5,11 @@
 [![Docs](https://docs.rs/pharos/badge.svg)](https://docs.rs/pharos)
 ![crates.io](https://img.shields.io/crates/v/pharos.svg)
 
-> An introduction to pharos, is available in many formats: [video](https://youtu.be/BAzsxW-nxh8), [wikipedia](https://en.wikipedia.org/wiki/Lighthouse_of_Alexandria) and it was even honored by many artists like this painting by [Micheal Turner](http://omeka.wustl.edu/omeka/files/original/2694d12580166e77d40afd37b492a78e.jpg).
+> An introduction to pharos, is available in many formats: [video](https://youtu.be/BAzsxW-nxh8), [wikipedia](https://en.wikipedia.org/wiki/Lighthouse_of_Alexandria) and it was even honored by many artists like [this painting by Micheal Turner](http://omeka.wustl.edu/omeka/files/original/2694d12580166e77d40afd37b492a78e.jpg).
 
-More seriously, pharos is a small (observer)[https://en.wikipedia.org/wiki/Observer_pattern] library that let's you create futures 0.3 streams that observers can listen to.
+More seriously, pharos is a small [observer](https://en.wikipedia.org/wiki/Observer_pattern) library that let's you create futures 0.3 streams that observers can listen to.
 
-I created it so leverage interoperability we can create by using async Streams and Sinks from the futures library. You can now use all stream combinators, forward it into Sinks and so on. I also want it to be future-proof, so it's aimed directly at async-await. This means it will *not compile on stable rust until async_await has been stabilized*.
+I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. You can now use all stream combinators, forward it into Sinks and so on. I also want it to be future-proof, so it's aimed directly at async-await. This means it will **not compile on stable rust until async_await has been stabilized**.
 
 ## Table of Contents
 
@@ -69,22 +69,22 @@ Whenever observers want to unsubscribe, they can just drop the stream or call `c
 
 Your event type will be cloned once for each observer, so you might want to put it in an Arc if it's bigger than a pointer size. Eg, there's no point putting an enum without associated data in an Arc.
 
-Examples can be found in the examples directory. Here is the most basic one:
+Examples can be found in the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory. Here is a summary of the most basic one:
 
 ```rust
 #![ feature( async_await, await_macro )]
 
 use
 {
-	pharos :: { * } ,
+   pharos :: { * } ,
 
-	futures ::
-	{
-		channel::mpsc :: Receiver      ,
-		executor      :: LocalPool     ,
-		task          :: LocalSpawnExt ,
-		stream        :: StreamExt     ,
-	},
+   futures ::
+   {
+      channel::mpsc :: Receiver      ,
+      executor      :: LocalPool     ,
+      task          :: LocalSpawnExt ,
+      stream        :: StreamExt     ,
+   },
 };
 
 
@@ -95,17 +95,17 @@ struct Godess { pharos: Pharos<GodessEvent> }
 
 impl Godess
 {
-	fn new() -> Self
-	{
-		Self { pharos: Pharos::new() }
-	}
+   fn new() -> Self
+   {
+      Self { pharos: Pharos::new() }
+   }
 
-	// Send Godess sailing so she can tweet about it!
-	//
-	pub async fn sail( &mut self )
-	{
-		await!( self.pharos.notify( &GodessEvent::Sailing ) );
-	}
+   // Send Godess sailing so she can tweet about it!
+   //
+   pub async fn sail( &mut self )
+   {
+      await!( self.pharos.notify( &GodessEvent::Sailing ) );
+   }
 }
 
 
@@ -118,7 +118,7 @@ impl Godess
 //
 enum GodessEvent
 {
-	Sailing
+   Sailing
 }
 
 
@@ -129,41 +129,41 @@ enum GodessEvent
 //
 impl Observable<GodessEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize ) -> Receiver<GodessEvent>
-	{
-		self.pharos.observe( queue_size )
-	}
+   fn observe( &mut self, queue_size: usize ) -> Receiver<GodessEvent>
+   {
+      self.pharos.observe( queue_size )
+   }
 }
 
 
 fn main()
 {
-	let mut pool  = LocalPool::new();
-	let mut exec  = pool.spawner();
+   let mut pool  = LocalPool::new();
+   let mut exec  = pool.spawner();
 
-	let program = async move
-	{
-		let mut isis = Godess::new();
+   let program = async move
+   {
+      let mut isis = Godess::new();
 
-		// subscribe
-		//
-		let mut events = isis.observe( 3 );
+      // subscribe: bounded channel with 3 + 1 slots
+      //
+      let mut events = isis.observe( 3 );
 
-		// trigger an event
-		//
-		await!( isis.sail() );
+      // trigger an event
+      //
+      await!( isis.sail() );
 
-		// read from stream
-		//
-		let from_stream = await!( events.next() ).unwrap();
+      // read from stream
+      //
+      let from_stream = await!( events.next() ).unwrap();
 
-		dbg!( from_stream );
-		assert_eq!( GodessEvent::Sailing, from_stream );
-	};
+      dbg!( from_stream );
+      assert_eq!( GodessEvent::Sailing, from_stream );
+   };
 
-	exec.spawn_local( program ).expect( "Spawn program" );
+   exec.spawn_local( program ).expect( "Spawn program" );
 
-	pool.run();
+   pool.run();
 }
 ```
 
