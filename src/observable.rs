@@ -1,14 +1,22 @@
-use crate :: { *, import::* };
+use crate :: { import::* };
 
-pub trait Observable<Event, Rx, Tx>
+/// Indicate that a type is observable. You can call [observe] to get a
+/// stream of events.
+//
+pub trait Observable<Event>
 
-	where Event: Named + Clone + 'static + Send ,
-	      Tx   : Sink<Event>                    ,
-	      Rx   : Stream<Item=Event>             ,
+	where Event: Clone + 'static + Send ,
 {
-	fn observers(&mut self) -> &mut HashMap< Arc<str>, Tx >;
+	fn observe( &mut self, name: Arc<str>, queue_size: usize ) -> Receiver<(Arc<str>, Event)>;
+}
 
-	fn observe( &mut self, name: Arc<str> ) -> Rx;
 
-	fn notify( &mut self, evt: Event ) -> ReturnNoSend< Result<(), Error> >;
+/// Indicate that a type is observable through an unbounded stream. You can call [observe_unbounded]
+/// to get a stream of events.
+//
+pub trait UnboundedObservable<Event>
+
+	where Event: Clone + 'static + Send ,
+{
+	fn observe_unbounded( &mut self, name: Arc<str> ) -> UnboundedReceiver<(Arc<str>, Event)>;
 }

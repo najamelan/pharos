@@ -3,27 +3,19 @@
 //! everytime you want to notify observers.
 //!
 
-#![ feature( await_macro, async_await ) ]
-
-#![ cfg_attr( feature = "blanket", feature( specialization ) ) ]
+#![ feature( async_await, await_macro ) ]
 
 
-mod named     ;
 mod observable;
+mod pharos    ;
 
-#[ cfg( feature = "blanket" ) ] mod observable_impl;
 
 
 pub use
 {
-	named      :: Named      ,
-	observable :: Observable ,
+	pharos     :: { Pharos                          } ,
+	observable :: { Observable, UnboundedObservable } ,
 };
-
-
-use std::{ pin::Pin, future::Future };
-
-pub type ReturnNoSend<'a, R> = Pin<Box< dyn Future<Output = R> + 'a >> ;
 
 
 
@@ -31,17 +23,20 @@ mod import
 {
 	pub use
 	{
-		std     :: { sync::Arc                 } ,
-		futures :: { prelude::{ Stream, Sink } } ,
-		failure :: { Error                     } ,
-	};
+		std :: { sync::Arc } ,
 
+		futures ::
+		{
+			future::{ self, join_all } ,
+			Stream   , Sink            ,
+			FutureExt, SinkExt         ,
 
-	#[ cfg( feature = "blanket" ) ]
-	//
-	pub use
-	{
-		hashbrown :: { HashMap                                               } ,
-		futures   :: { SinkExt, FutureExt, channel::mpsc::{ self, UnboundedSender, UnboundedReceiver } } ,
+			channel::mpsc::
+			{
+				self           , SendError         ,
+				Sender         , Receiver          ,
+				UnboundedSender, UnboundedReceiver ,
+			} ,
+		},
 	};
 }

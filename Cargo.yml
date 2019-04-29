@@ -1,6 +1,6 @@
 package:
 
-  name   : thespis
+  name   : pharos
   version: 0.1.0
   authors: [ Naja Melan <najamelan@autistici.org> ]
   edition: '2018'
@@ -8,15 +8,9 @@ package:
 
 features:
 
-  default: [ blanket   ]
-  blanket: [ hashbrown ]
 
 
 dependencies:
 
-  failure        : ^0.1
   futures-preview: { version: ^0.3.0-alpha.15, features: [ nightly, std ], default-features: false }
 
-  # blanket
-  #
-  hashbrown: { version: ^0.3, optional: true }
