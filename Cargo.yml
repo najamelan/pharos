@@ -1,16 +1,25 @@
 package:
 
-  name   : pharos
-  version: 0.1.0
-  authors: [ Naja Melan <najamelan@autistici.org> ]
-  edition: '2018'
+  name        : pharos
+  version     : 0.1.0
+  authors     : [ Naja Melan <najamelan@autistici.org> ]
+  edition     : '2018'
+  readme      : README.md
+  license     : Unlicense
+
+  repository  : https://github.com/najamelan/pharos
+  description : Observer pattern which generates a futures 0.3 stream of events
+  categories  : [ Asynchronous ]
+  keywords    : [ observer, futures, stream, broadcast, "publish/subscribe", "Gang of Four Design Pattern" ]
 
 
-features:
+badges:
 
+  travis-ci   : { repository: najamelan/pharos   }
+  maintenance : { status    : actively-developed }
 
 
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha.15, features: [ nightly, std ], default-features: false }
+  futures-preview: { version: ^0.3.0-alpha.15 }
 

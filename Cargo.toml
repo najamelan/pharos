@@ -1,14 +1,23 @@
 # Auto-generated from "Cargo.yml"
+[badges]
+[badges.maintenance]
+status = "actively-developed"
+
+[badges.travis-ci]
+repository = "najamelan/pharos"
+
 [dependencies]
 [dependencies.futures-preview]
-default-features = false
-features = ["nightly", "std"]
 version = "^0.3.0-alpha.15"
-
-[features]
 
 [package]
 authors = ["Naja Melan <najamelan@autistici.org>"]
+categories = ["Asynchronous"]
+description = "Observer pattern which generates a futures 0.3 stream of events"
 edition = "2018"
+keywords = ["observer", "futures", "stream", "broadcast", "publish/subscribe", "Gang of Four Design Pattern"]
+license = "Unlicense"
 name = "pharos"
+readme = "README.md"
+repository = "https://github.com/najamelan/pharos"
 version = "0.1.0"

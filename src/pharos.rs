@@ -11,8 +11,8 @@ use crate :: { import::* };
 //
 pub struct Pharos<Event: Clone + 'static + Send>
 {
-	observers: Vec< Option<( Arc<str>, Sender         <(Arc<str>, Event)> )> >,
-	unbounded: Vec< Option<( Arc<str>, UnboundedSender<(Arc<str>, Event)> )> >,
+	observers: Vec<Option< Sender         <Event> >>,
+	unbounded: Vec<Option< UnboundedSender<Event> >>,
 }
 
 
@@ -35,11 +35,11 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	/// Note that the use of a bounded channel provides backpressure and can slow down the observed
 	/// task.
 	//
-	pub fn observe( &mut self, name: Arc<str>, queue_size: usize ) -> Receiver<(Arc<str>, Event)>
+	pub fn observe( &mut self, queue_size: usize ) -> Receiver<Event>
 	{
 		let (tx, rx) = mpsc::channel( queue_size );
 
-		self.observers.push( Some((name, tx)) );
+		self.observers.push( Some( tx ) );
 
 		rx
 	}
@@ -49,11 +49,11 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	/// Add an observer to the pharos. This will use an unbounded channel. Beware that if the observable
 	/// outpaces the observer, this will lead to growing memory consumption over time.
 	//
-	pub fn observe_unbound( &mut self, name: Arc<str> ) -> UnboundedReceiver<(Arc<str>, Event)>
+	pub fn observe_unbounded( &mut self ) -> UnboundedReceiver<Event>
 	{
 		let (tx, rx) = mpsc::unbounded();
 
-		self.unbounded.push( Some((name, tx)) );
+		self.unbounded.push( Some( tx ) );
 
 		rx
 	}
@@ -62,55 +62,63 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 
 	/// Notify all observers of Event evt.
 	//
-	pub async fn notify( &mut self, evt: Event )
+	pub async fn notify<'a>( &'a mut self, evt: &'a Event )
 	{
-		await!( Self::notify_inner( &mut self.observers, evt.clone() ) );
-		await!( Self::notify_inner( &mut self.unbounded, evt         ) );
+		await!( Self::notify_inner( &mut self.unbounded, &evt ) );
+		await!( Self::notify_inner( &mut self.observers, &evt ) );
 	}
 
 
 
 	// Helper method to abstract out over bounded and unbounded observers.
 	//
-	async fn notify_inner
+	async fn notify_inner<'a>
 	(
-		observers: &mut Vec< Option<( Arc<str>, impl Sink<(Arc<str>, Event), SinkError=SendError> + Unpin + Clone )> > ,
-		evt: Event
+		observers: &'a mut Vec< Option<impl Sink<Event, SinkError=SendError> + Unpin + Clone> > ,
+		evt: &'a Event
 	)
 	{
-		let imm = &*observers;
-
-		// Try to send to all unbounded in parallel, so they can all start processing this event
-		// even if one of them is blocked on a full queue
+		// Try to send to all channels in parallel, so they can all start processing this event
+		// even if one of them is blocked on a full queue.
+		//
+		// We can not have mutable access in parallel, so we destructure our vector. This probably
+		// allocates a new vector every time. If you have a better idea, please open an issue!
+		//
+		// The output of the join is a vec of options with the disconnected observers removed.
 		//
 		let fut = join_all
 		(
-			( 0..imm.len() ).map( |i|
+			( 0..observers.len() ).map( |i|
 			{
 				let evt = evt.clone();
+				let opt = observers[i].take();
 
 				async move
 				{
-					let result = if let Some(( name, tx )) = &imm[ i ]
+					if let Some( mut tx ) = opt
 					{
-						let mut tx = tx.clone();
+						// It's disconnected, drop it
+						//
+						if await!( tx.send( evt ) ).is_err()
+						{
+							None
+						}
 
-						await!( tx.send(( name.clone(), evt )) )
+						// Put it back after use
+						//
+						else { Some( tx ) }
 					}
 
-					else { Ok(()) };
-
-					result.is_err()
+					// It was already none
+					//
+					else { None }
 				}
 			})
 		);
 
 
-		// if any receivers where dropped, set them to none so we don't try to send to them again.
+		// Put back the observers that we "borrowed"
 		//
-		for (i, err) in await!( fut ).iter().enumerate()
-		{
-			if *err { observers[ i ] = None; }
-		}
+		*observers = await!( fut );
 	}
 }

@@ -2,8 +2,7 @@
 
 use
 {
-	pharos :: { *          } ,
-	std    :: { sync::Arc  } ,
+	pharos :: { * } ,
 
 	futures ::
 	{
@@ -15,37 +14,50 @@ use
 };
 
 
-struct Isis { pharos: Pharos<IsisEvent> }
+// here we put a pharos object on our struct
+//
+struct Godess { pharos: Pharos<GodessEvent> }
 
 
-impl Isis
+impl Godess
 {
 	fn new() -> Self
 	{
 		Self { pharos: Pharos::new() }
 	}
 
-	pub async fn say_hello( &mut self )
+	// Send Godess sailing so she can tweet about it!
+	//
+	pub async fn sail( &mut self )
 	{
-		await!( self.pharos.notify( IsisEvent::Hello ) );
+		await!( self.pharos.notify( &GodessEvent::Sailing ) );
 	}
 }
 
 
 
-#[ derive( Clone, Debug ) ]
+// Event types need to implement clone, but you can wrap them in Arc if not. Also they will be
+// cloned, so if you will have several observers and big event data, putting them in an Arc is
+// definitely best. It has no benefit to put a simple dataless enum in an Arc though.
 //
-enum IsisEvent
+#[ derive( Clone, Debug, PartialEq, Copy ) ]
+//
+enum GodessEvent
 {
-	Hello
+	Sailing
 }
 
 
-impl Observable<IsisEvent> for Isis
+// This is the needed implementation of Observable. We might one day have a derive for this,
+// but it's not so interesting, since you always have to point it to your pharos object,
+// and when you want to be observable over several types of events, you might want to keep
+// pharos in a hashmap over type_id, and a derive would quickly become a mess.
+//
+impl Observable<GodessEvent> for Godess
 {
-	fn observe( &mut self, name: Arc<str>, queue_size: usize ) -> Receiver<(Arc<str>, IsisEvent)>
+	fn observe( &mut self, queue_size: usize ) -> Receiver<GodessEvent>
 	{
-		self.pharos.observe( name, queue_size )
+		self.pharos.observe( queue_size )
 	}
 }
 
@@ -57,13 +69,22 @@ fn main()
 
 	let program = async move
 	{
-		let mut w = Isis::new();
+		let mut isis = Godess::new();
 
-		let mut events = w.observe( "w".into(), 3 );
+		// subscribe
+		//
+		let mut events = isis.observe( 3 );
 
-		await!( w.say_hello() );
+		// trigger an event
+		//
+		await!( isis.sail() );
 
-		dbg!( await!( events.next() ) );
+		// read from stream
+		//
+		let from_stream = await!( events.next() ).unwrap();
+
+		dbg!( from_stream );
+		assert_eq!( GodessEvent::Sailing, from_stream );
 	};
 
 	exec.spawn_local( program ).expect( "Spawn program" );
