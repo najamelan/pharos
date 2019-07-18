@@ -22,11 +22,7 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	//
 	pub fn new() -> Self
 	{
-		Self
-		{
-			observers: Vec::new(),
-			unbounded: Vec::new(),
-		}
+		Self::default()
 	}
 
 
@@ -120,5 +116,19 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 		// Put back the observers that we "borrowed"
 		//
 		*observers = fut.await;
+	}
+}
+
+
+
+impl<Event: Clone + 'static + Send> Default for Pharos<Event>
+{
+	fn default() -> Self
+	{
+		Self
+		{
+			observers: Vec::new(),
+			unbounded: Vec::new(),
+		}
 	}
 }
