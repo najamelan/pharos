@@ -7,7 +7,7 @@ pub trait Observable<Event>
 
 	where Event: Clone + 'static + Send ,
 {
-	/// Add an observer to the observable. This will use a bounded channel of the size of `queue_size` + 1.
+	/// Add an observer to the observable. This will use a bounded channel of the size of `queue_size`.
 	/// Note that the use of a bounded channel provides backpressure and can slow down the observed
 	/// task.
 	//

@@ -5,7 +5,7 @@
 //! [![Docs](https://docs.rs/pharos/badge.svg)](https://docs.rs/pharos)
 //! ![crates.io](https://img.shields.io/crates/v/pharos.svg)
 //!
-//! > An introduction to pharos, is available in many formats: [video](https://youtu.be/BAzsxW-nxh8), [wikipedia](https://en.wikipedia.org/wiki/Lighthouse_of_Alexandria) and it was even honored by many artists like [this painting by Micheal Turner](http://omeka.wustl.edu/omeka/files/original/2694d12580166e77d40afd37b492a78e.jpg).
+//! > An introduction to pharos is available in many formats: [video](https://youtu.be/BAzsxW-nxh8), [wikipedia](https://en.wikipedia.org/wiki/Lighthouse_of_Alexandria) and it was even honored by many artists like [this painting by Micheal Turner](http://omeka.wustl.edu/omeka/files/original/2694d12580166e77d40afd37b492a78e.jpg).
 //!
 //! More seriously, pharos is a small [observer](https://en.wikipedia.org/wiki/Observer_pattern) library that let's you create futures 0.3 streams that observers can listen to.
 //!
@@ -209,19 +209,15 @@ pub use
 
 mod import
 {
-	pub use
+	pub(crate) use
 	{
-		std :: { sync::Arc } ,
-
 		futures ::
 		{
-			future::{ self, join_all } ,
-			Stream   , Sink            ,
-			FutureExt, SinkExt         ,
+			future::{ join_all }, Sink, SinkExt,
 
 			channel::mpsc::
 			{
-				self           , SendError         ,
+				self         ,
 				Sender         , Receiver          ,
 				UnboundedSender, UnboundedReceiver ,
 			} ,

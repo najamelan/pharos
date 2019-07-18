@@ -8,7 +8,7 @@ repository = "najamelan/pharos"
 
 [dependencies]
 [dependencies.futures-preview]
-version = "^0.3.0-alpha.15"
+version = "^0.3.0-alpha.17"
 
 [package]
 authors = ["Naja Melan <najamelan@autistici.org>"]
@@ -20,4 +20,4 @@ license = "Unlicense"
 name = "pharos"
 readme = "README.md"
 repository = "https://github.com/najamelan/pharos"
-version = "0.1.1"
+version = "0.2.0"

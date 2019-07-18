@@ -31,7 +31,7 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 
 
 
-	/// Add an observer to the pharos. This will use a bounded channel of the size of `queue_size` + 1.
+	/// Add an observer to the pharos. This will use a bounded channel of the size of `queue_size`.
 	/// Note that the use of a bounded channel provides backpressure and can slow down the observed
 	/// task.
 	//
@@ -64,8 +64,8 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	//
 	pub async fn notify<'a>( &'a mut self, evt: &'a Event )
 	{
-		await!( Self::notify_inner( &mut self.unbounded, &evt ) );
-		await!( Self::notify_inner( &mut self.observers, &evt ) );
+		Self::notify_inner( &mut self.unbounded, &evt ).await;
+		Self::notify_inner( &mut self.observers, &evt ).await;
 	}
 
 
@@ -74,7 +74,7 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	//
 	async fn notify_inner<'a>
 	(
-		observers: &'a mut Vec< Option<impl Sink<Event, SinkError=SendError> + Unpin + Clone> > ,
+		observers: &'a mut Vec< Option<impl Sink<Event> + Unpin + Clone> > ,
 		evt: &'a Event
 	)
 	{
@@ -99,7 +99,7 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 					{
 						// It's disconnected, drop it
 						//
-						if await!( tx.send( evt ) ).is_err()
+						if tx.send( evt ).await.is_err()
 						{
 							None
 						}
@@ -119,6 +119,6 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 
 		// Put back the observers that we "borrowed"
 		//
-		*observers = await!( fut );
+		*observers = fut.await;
 	}
 }

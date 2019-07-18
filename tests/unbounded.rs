@@ -37,13 +37,13 @@ fn basic()
 
 		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 
-		await!( isis.sail() );
-		await!( isis.sail() );
+		isis.sail().await;
+		isis.sail().await;
 		drop( isis );
 
-		assert_eq!( IsisEvent::Sail, await!( events.next() ).unwrap() );
-		assert_eq!( IsisEvent::Sail, await!( events.next() ).unwrap() );
-		assert_eq!( None           , await!( events.next() )          );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
 	});
 }
 
@@ -60,12 +60,12 @@ fn close_receiver()
 
 		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 
-		await!( isis.sail() );
+		isis.sail().await;
 		events.close();
-		await!( isis.sail() );
+		isis.sail().await;
 
-		assert_eq!( IsisEvent::Sail, await!( events.next() ).unwrap() );
-		assert_eq!( None           , await!( events.next() )          );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
 	});
 }
 
@@ -83,23 +83,23 @@ fn one_receiver_drops()
 		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 
-		await!( isis.sail() );
+		isis.sail().await;
 
-		let shine_evt = await!( shine_evts.next() ).unwrap();
-		let egypt_evt = await!( egypt_evts.next() ).unwrap();
+		let shine_evt = shine_evts.next().await.unwrap();
+		let egypt_evt = egypt_evts.next().await.unwrap();
 
 		assert_eq!( IsisEvent::Sail, shine_evt );
 		assert_eq!( IsisEvent::Sail , egypt_evt );
 
 		drop( egypt_evts );
 
-		await!( isis.sail() );
-		await!( isis.sail() );
+		isis.sail().await;
+		isis.sail().await;
 
-		let shine_evt = await!( shine_evts.next() ).unwrap();
+		let shine_evt = shine_evts.next().await.unwrap();
 		assert_eq!( IsisEvent::Sail, shine_evt );
 
-		let shine_evt = await!( shine_evts.next() ).unwrap();
+		let shine_evt = shine_evts.next().await.unwrap();
 		assert_eq!( IsisEvent::Sail, shine_evt );
 	});
 }
@@ -118,10 +118,10 @@ fn names()
 		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 
-		await!( isis.sail() );
+		isis.sail().await;
 
-		let shine_evt = await!( shine_evts.next() ).unwrap();
-		let egypt_evt = await!( egypt_evts.next() ).unwrap();
+		let shine_evt = shine_evts.next().await.unwrap();
+		let egypt_evt = egypt_evts.next().await.unwrap();
 
 		assert_eq!( IsisEvent::Sail, shine_evt );
 		assert_eq!( IsisEvent::Sail, egypt_evt );
@@ -143,10 +143,10 @@ fn same_names()
 		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 
-		await!( isis.sail() );
+		isis.sail().await;
 
-		let shine_evt = await!( shine_evts.next() ).unwrap();
-		let egypt_evt = await!( egypt_evts.next() ).unwrap();
+		let shine_evt = shine_evts.next().await.unwrap();
+		let egypt_evt = egypt_evts.next().await.unwrap();
 
 		assert_eq!( IsisEvent::Sail, shine_evt );
 		assert_eq!( IsisEvent::Sail, egypt_evt );
@@ -168,11 +168,11 @@ fn types()
 		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
 		let mut shine_evts: UnboundedReceiver<NutEvent > = isis.observe_unbounded();
 
-		await!( isis.sail () );
-		await!( isis.shine() );
+		isis.sail ().await;
+		isis.shine().await;
 
-		let shine_evt = await!( shine_evts.next() ).unwrap();
-		let egypt_evt = await!( egypt_evts.next() ).unwrap();
+		let shine_evt = shine_evts.next().await.unwrap();
+		let egypt_evt = egypt_evts.next().await.unwrap();
 
 		assert_eq!( NutEvent{ time: "midnight".into() }, shine_evt );
 		assert_eq!( IsisEvent::Sail                    , egypt_evt );
@@ -198,13 +198,13 @@ fn threads()
 		{
 			run( async move
 			{
-				await!( isis.sail () );
-				await!( isis.shine() );
+				isis.sail ().await;
+				isis.shine().await;
 			});
 		});
 
-		let shine_evt = await!( shine_evts.next() ).unwrap();
-		let egypt_evt = await!( egypt_evts.next() ).unwrap();
+		let shine_evt = shine_evts.next().await.unwrap();
+		let egypt_evt = egypt_evts.next().await.unwrap();
 
 		assert_eq!( NutEvent{ time: "midnight".into() }, shine_evt );
 		assert_eq!( IsisEvent::Sail                    , egypt_evt );
@@ -230,12 +230,12 @@ fn alot_of_events()
 
 		for _ in 0..amount
 		{
-			await!( w.sail() );
+			w.sail().await;
 		}
 
 		for _ in 0..amount
 		{
-			let evt = await!( events.next() ).unwrap();
+			let evt = events.next().await.unwrap();
 
 			assert_eq!( IsisEvent::Sail, evt );
 		}

@@ -1,13 +1,12 @@
 pub mod import
 {
-	pub use
+	pub(crate) use
 	{
 		pharos :: { *                                 } ,
 		std    :: { sync::Arc, future::Future, thread } ,
 
 		futures ::
 		{
-			future        :: FutureExt         ,
 			channel::mpsc :: Receiver          ,
 			channel::mpsc :: UnboundedReceiver ,
 			executor      :: LocalPool         ,
@@ -41,14 +40,14 @@ impl Godess
 
 	pub async fn sail( &mut self )
 	{
-		await!( self.isis.notify( &IsisEvent::Sail ) );
+		self.isis.notify( &IsisEvent::Sail ).await;
 	}
 
 	pub async fn shine( &mut self )
 	{
 		let evt = NutEvent { time: "midnight".into() };
 
-		await!( self.nut.notify( &evt ) );
+		self.nut.notify( &evt ).await;
 	}
 }
 
