@@ -190,8 +190,8 @@
 
 
 
-#![ feature( async_await, await_macro ) ]
-#![ forbid ( unsafe_code              ) ]
+#![ feature( async_await ) ]
+#![ forbid ( unsafe_code ) ]
 
 
 mod observable;

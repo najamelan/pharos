@@ -6,6 +6,8 @@ use crate :: { import::* };
 ///
 /// You can of course create several `Pharos` (I know, historical sacrilege) for (different) types
 /// of events.
+///
+// TODO: why do we require Send?
 //
 #[ derive( Clone, Debug ) ]
 //

@@ -1,4 +1,4 @@
-#![ feature( async_await, await_macro )]
+#![ feature( async_await )]
 
 use
 {
@@ -30,7 +30,7 @@ impl Godess
 	//
 	pub async fn sail( &mut self )
 	{
-		await!( self.pharos.notify( &GodessEvent::Sailing ) );
+		self.pharos.notify( &GodessEvent::Sailing ).await;
 	}
 }
 
@@ -77,11 +77,11 @@ fn main()
 
 		// trigger an event
 		//
-		await!( isis.sail() );
+		isis.sail().await;
 
 		// read from stream
 		//
-		let from_stream = await!( events.next() ).unwrap();
+		let from_stream = events.next().await.unwrap();
 
 		dbg!( from_stream );
 		assert_eq!( GodessEvent::Sailing, from_stream );
