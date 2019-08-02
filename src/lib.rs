@@ -15,6 +15,7 @@
 //!
 //! - [Security](#security)
 //! - [Install](#install)
+//!   - [Upgrade](#upgrade)
 //!   - [Dependencies](#dependencies)
 //! - [Usage](#usage)
 //! - [API](#api)
@@ -50,6 +51,11 @@
 //!    pharos = "^0.1"
 //! ```
 //!
+//! ### Upgrade
+//!
+//! Please check out the [changelog](https://github.com/najamelan/pharos/blob/master/CHANGELOG.md) when upgrading.
+//!
+//!
 //! ### Dependencies
 //!
 //! This crate only has one dependiency. Cargo will automatically handle it's dependencies for you.
@@ -72,7 +78,7 @@
 //! Examples can be found in the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory. Here is a summary of the most basic one:
 //!
 //! ```rust
-//! #![ feature( async_await, await_macro )]
+//! #![ feature( async_await )]
 //!
 //! use
 //! {
@@ -104,7 +110,7 @@
 //!    //
 //!    pub async fn sail( &mut self )
 //!    {
-//!       await!( self.pharos.notify( &GodessEvent::Sailing ) );
+//!       self.pharos.notify( &GodessEvent::Sailing ).await;
 //!    }
 //! }
 //!
@@ -151,11 +157,11 @@
 //!
 //!       // trigger an event
 //!       //
-//!       await!( isis.sail() );
+//!       isis.sail().await;
 //!
 //!       // read from stream
 //!       //
-//!       let from_stream = await!( events.next() ).unwrap();
+//!       let from_stream = events.next().await.unwrap();
 //!
 //!       dbg!( from_stream );
 //!       assert_eq!( GodessEvent::Sailing, from_stream );
