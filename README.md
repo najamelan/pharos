@@ -15,6 +15,7 @@ I created it to leverage interoperability we can create by using async Streams a
 
 - [Security](#security)
 - [Install](#install)
+  - [Upgrade](#upgrade)
   - [Dependencies](#dependencies)
 - [Usage](#usage)
 - [API](#api)
@@ -49,6 +50,11 @@ With raw Cargo.toml
 
    pharos = "^0.1"
 ```
+
+### Upgrade
+
+Please check out the [changelog](https://github.com/najamelan/pharos/blob/master/CHANGELOG.md) when upgrading.
+
 
 ### Dependencies
 
