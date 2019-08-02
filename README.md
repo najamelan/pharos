@@ -41,14 +41,14 @@ With [cargo yaml](https://gitlab.com/storedbox/cargo-yaml):
 ```yaml
 dependencies:
 
-  pharos: ^0.1
+  pharos: ^0.2
 ```
 
 With raw Cargo.toml
 ```toml
 [dependencies]
 
-   pharos = "^0.1"
+   pharos = "^0.2"
 ```
 
 ### Upgrade
