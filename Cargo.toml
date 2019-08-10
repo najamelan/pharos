@@ -8,7 +8,7 @@ repository = "najamelan/pharos"
 
 [dependencies]
 [dependencies.futures-preview]
-version = "^0.3.0-alpha.17"
+version = "^0.3.0-alpha.18"
 
 [package]
 authors = ["Naja Melan <najamelan@autistici.org>"]
