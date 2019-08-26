@@ -50,7 +50,7 @@ With raw Cargo.toml
 ```toml
 [dependencies]
 
-   pharos = "^0.2"
+   pharos = "0.2"
 ```
 
 ### Upgrade
