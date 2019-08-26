@@ -80,8 +80,6 @@ Your event type will be cloned once for each observer, so you might want to put 
 Examples can be found in the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory. Here is a summary of the most basic one:
 
 ```rust
-#![ feature( async_await, await_macro )]
-
 use
 {
    pharos :: { * } ,
@@ -112,7 +110,7 @@ impl Godess
    //
    pub async fn sail( &mut self )
    {
-      await!( self.pharos.notify( &GodessEvent::Sailing ) );
+      self.pharos.notify( &GodessEvent::Sailing ).await;
    }
 }
 
@@ -159,11 +157,11 @@ fn main()
 
       // trigger an event
       //
-      await!( isis.sail() );
+      isis.sail().await;
 
       // read from stream
       //
-      let from_stream = await!( events.next() ).unwrap();
+      let from_stream = events.next().await.unwrap();
 
       dbg!( from_stream );
       assert_eq!( GodessEvent::Sailing, from_stream );
