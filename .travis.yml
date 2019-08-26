@@ -35,22 +35,22 @@ matrix:
     - os: linux
 
       script:
-        - cargo test
-        - cargo test --release
+        - cargo test --all-features
+        - cargo test --all-features --release
         - cargo doc --no-deps --all-features
 
 
     - os: osx
 
       script:
-        - cargo test
+        - cargo test --all-features
 
 
 
     - os: windows
 
       script:
-        - cargo test
+        - cargo test --all-features
 
 
 
