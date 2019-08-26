@@ -9,7 +9,9 @@
 
 More seriously, pharos is a small [observer](https://en.wikipedia.org/wiki/Observer_pattern) library that let's you create futures 0.3 streams that observers can listen to.
 
-I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. You can now use all stream combinators, forward it into Sinks and so on. I also want it to be future-proof, so it's aimed directly at async-await. This means it will **not compile on stable rust until async_await has been stabilized**.
+I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. You can now use all stream combinators, forward it into Sinks and so on.
+
+Minimal rustc version: 1.39.
 
 ## Table of Contents
 
