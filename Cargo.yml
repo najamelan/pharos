@@ -1,7 +1,16 @@
 package:
 
+  # When releasing to crates.io:
+  #
+  # - Update CHANGELOG.md.
+  # - Update version numbers in Cargo.yml, Cargo.toml, install section of readme.
+  # - verify CI result
+  # - cargo publish
+  # - merge dev branch into master
+  # - create git tag
+  #
+  version     : 0.2.2
   name        : pharos
-  version     : 0.2.1
   authors     : [ Naja Melan <najamelan@autistici.org> ]
   edition     : '2018'
   readme      : README.md
@@ -12,6 +21,17 @@ package:
   categories  : [ asynchronous ]
   keywords    : [ observer, futures, stream, broadcast, publish_subscribe ]
 
+  metadata:
+    docs.rs:
+      all-features: true
+
+
+features:
+
+  # only used internally, don't use
+  #
+  external_doc: []
+
 
 badges:
 
@@ -21,5 +41,5 @@ badges:
 
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha.18 }
+  futures-preview: { version: ^0.3.0-alpha }
 
