@@ -1,5 +1,10 @@
 # Pharos Changelog
 
+## 0.2.2 - 2019-08-02
+
+- update to futures 0.3.0-alpha.18
+- remove async_await feature (from 1.39 this crate should compile on stable)
+
 ## 0.2.1 - 2019-08-02
 
 - remove `await_macro` feature use and convert to new await syntax.

@@ -9,7 +9,9 @@
 
 More seriously, pharos is a small [observer](https://en.wikipedia.org/wiki/Observer_pattern) library that let's you create futures 0.3 streams that observers can listen to.
 
-I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. You can now use all stream combinators, forward it into Sinks and so on. I also want it to be future-proof, so it's aimed directly at async-await. This means it will **not compile on stable rust until async_await has been stabilized**.
+I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. You can now use all stream combinators, forward it into Sinks and so on.
+
+Minimal rustc version: 1.39.
 
 ## Table of Contents
 
@@ -41,14 +43,14 @@ With [cargo yaml](https://gitlab.com/storedbox/cargo-yaml):
 ```yaml
 dependencies:
 
-  pharos: ^0.1
+  pharos: ^0.2
 ```
 
 With raw Cargo.toml
 ```toml
 [dependencies]
 
-   pharos = "^0.1"
+   pharos = "0.2"
 ```
 
 ### Upgrade
@@ -63,7 +65,7 @@ This crate only has one dependiency. Cargo will automatically handle it's depend
 ```yaml
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha.15 }
+  futures-preview: { version: ^0.3.0-alpha }
 ```
 
 ## Usage
@@ -78,8 +80,6 @@ Your event type will be cloned once for each observer, so you might want to put 
 Examples can be found in the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory. Here is a summary of the most basic one:
 
 ```rust
-#![ feature( async_await, await_macro )]
-
 use
 {
    pharos :: { * } ,
@@ -110,7 +110,7 @@ impl Godess
    //
    pub async fn sail( &mut self )
    {
-      await!( self.pharos.notify( &GodessEvent::Sailing ) );
+      self.pharos.notify( &GodessEvent::Sailing ).await;
    }
 }
 
@@ -157,11 +157,11 @@ fn main()
 
       // trigger an event
       //
-      await!( isis.sail() );
+      isis.sail().await;
 
       // read from stream
       //
-      let from_stream = await!( events.next() ).unwrap();
+      let from_stream = events.next().await.unwrap();
 
       dbg!( from_stream );
       assert_eq!( GodessEvent::Sailing, from_stream );

@@ -1,5 +1,3 @@
-#![ feature( async_await )]
-
 // Tested:
 //
 // - ✔ basic functionality
