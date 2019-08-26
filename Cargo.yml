@@ -5,6 +5,7 @@ package:
   # - Update CHANGELOG.md.
   # - Update version numbers in Cargo.yml, Cargo.toml, install section of readme.
   # - verify CI result
+  # - test dependent crates
   # - cargo publish
   # - merge dev branch into master
   # - create git tag

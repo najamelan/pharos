@@ -65,7 +65,7 @@ This crate only has one dependiency. Cargo will automatically handle it's depend
 ```yaml
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha.15 }
+  futures-preview: { version: ^0.3.0-alpha }
 ```
 
 ## Usage
