@@ -5,8 +5,10 @@
 // - ✔ send events of 2 types from one object + something other than an enum without data
 // - ✔ accross threads
 // - TODO: test that sender task blocks when observer falls behind (see comments below)
-
-
+// - ✔ Basic filter usage, only one event type should be returned.
+// - ✔ A filter that always returns true should get all events.
+// - ✔ A filter that always returns false should not get any events.
+//
 mod common;
 
 use common::{ *, import::* };
@@ -21,7 +23,7 @@ fn basic()
 	{
 		let mut isis = Godess::new();
 
-		let mut events = isis.observe( 5 );
+		let mut events = isis.observe( 5, None );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -45,7 +47,7 @@ fn close_receiver()
 	{
 		let mut isis = Godess::new();
 
-		let mut events = isis.observe( 5 );
+		let mut events = isis.observe( 5, None );
 
 		isis.sail().await;
 		events.close();
@@ -67,8 +69,8 @@ fn one_receiver_drops()
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts = isis.observe( 1 );
-		let mut shine_evts = isis.observe( 2 );
+		let mut egypt_evts = isis.observe( 1, None );
+		let mut shine_evts = isis.observe( 2, None );
 
 		isis.sail().await;
 
@@ -100,8 +102,8 @@ fn types()
 		// Note that because of the asserts below type inference works here and we don't have to
 		// put type annotation, but I do find it quite obscure and better to be explicit.
 		//
-		let mut shine_evts: Receiver< NutEvent> = isis.observe( 5 );
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
+		let mut shine_evts: Receiver< NutEvent> = isis.observe( 5, None );
+		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5, None );
 
 		isis.shine().await;
 		isis.sail ().await;
@@ -126,8 +128,8 @@ fn threads()
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts = isis.observe( 5 );
-		let mut shine_evts = isis.observe( 5 );
+		let mut egypt_evts = isis.observe( 5, None );
+		let mut shine_evts = isis.observe( 5, None );
 
 
 		thread::spawn( move ||
@@ -194,3 +196,100 @@ fn block_sender()
 	pool.block_on();
 }
 */
+
+
+// Basic filter usage, only Dock should be returned.
+//
+#[ test ]
+//
+fn filter()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = Box::new( |evt: &IsisEvent|
+		{
+			match evt
+			{
+				IsisEvent::Sail => false,
+				IsisEvent::Dock => true ,
+			}
+		});
+
+		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some(filter) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns true should get all events.
+//
+#[ test ]
+//
+fn filter_true()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = Box::new( |_: &IsisEvent| true );
+
+		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some(filter) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns false should not get any events.
+//
+#[ test ]
+//
+fn filter_false()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = Box::new( |_: &IsisEvent| false );
+
+		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some(filter) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( None, events.next().await );
+	});
+}

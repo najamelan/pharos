@@ -1,4 +1,4 @@
-use crate :: { import::* };
+use crate :: { import::*, Observable, UnboundedObservable, Predicate };
 
 
 /// The Pharos lighthouse. When you implement Observable on your type, you can forward
@@ -7,13 +7,24 @@ use crate :: { import::* };
 /// You can of course create several `Pharos` (I know, historical sacrilege) for (different) types
 /// of events.
 //
-#[ derive( Clone, Debug ) ]
-//
 pub struct Pharos<Event: Clone + 'static + Send>
 {
-	observers: Vec<Option< Sender         <Event> >>,
-	unbounded: Vec<Option< UnboundedSender<Event> >>,
+	observers: Vec<Option< (Sender         <Event>, Option<Predicate<Event>>) >>,
+	unbounded: Vec<Option< (UnboundedSender<Event>, Option<Predicate<Event>>) >>,
 }
+
+
+
+// TODO: figure out what we really want here...
+//
+impl<Event: Clone + 'static + Send> fmt::Debug for Pharos<Event>
+{
+	fn fmt( &self, f: &mut fmt::Formatter<'_> ) -> fmt::Result
+	{
+		write!( f, "Pharos" )
+	}
+}
+
 
 
 impl<Event: Clone + 'static + Send> Pharos<Event>
@@ -23,35 +34,6 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	pub fn new() -> Self
 	{
 		Self::default()
-	}
-
-
-
-	/// Add an observer to the pharos. This will use a bounded channel of the size of `queue_size`.
-	/// Note that the use of a bounded channel provides backpressure and can slow down the observed
-	/// task.
-	//
-	pub fn observe( &mut self, queue_size: usize ) -> Receiver<Event>
-	{
-		let (tx, rx) = mpsc::channel( queue_size );
-
-		self.observers.push( Some( tx ) );
-
-		rx
-	}
-
-
-
-	/// Add an observer to the pharos. This will use an unbounded channel. Beware that if the observable
-	/// outpaces the observer, this will lead to growing memory consumption over time.
-	//
-	pub fn observe_unbounded( &mut self ) -> UnboundedReceiver<Event>
-	{
-		let (tx, rx) = mpsc::unbounded();
-
-		self.unbounded.push( Some( tx ) );
-
-		rx
 	}
 
 
@@ -72,7 +54,7 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	//
 	async fn notify_inner<'a>
 	(
-		observers: &'a mut Vec< Option<impl Sink<Event> + Unpin + Clone> > ,
+		observers: &'a mut Vec< Option< (impl Sink<Event> + Unpin + Clone, Option<Predicate<Event>>) > > ,
 		evt: &'a Event
 	)
 	{
@@ -93,18 +75,25 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 
 				async move
 				{
-					if let Some( mut tx ) = opt
+					if let Some( (mut tx, pre_opt) ) = opt
 					{
-						// It's disconnected, drop it
+						// If we have a predicate, run it, otherwise return true.
+						// we return the predicate, since we need to give it back at the end.
 						//
-						if tx.send( evt ).await.is_err()
+						let (go, pre_opt2) = pre_opt.map_or( (true, None), |pred| (pred( &evt ), Some(pred)) );
+
+
+						// We count on the send not being executed if go is false.
+						// If an error is returned, it's disconnected, drop it.
+						//
+						if go && tx.send( evt ).await.is_err()
 						{
 							None
 						}
 
 						// Put it back after use
 						//
-						else { Some( tx ) }
+						else { Some( (tx, pre_opt2) ) }
 					}
 
 					// It was already none
@@ -133,5 +122,38 @@ impl<Event: Clone + 'static + Send> Default for Pharos<Event>
 			observers: Vec::new(),
 			unbounded: Vec::new(),
 		}
+	}
+}
+
+
+impl<Event: 'static + Clone + Send> Observable<Event> for Pharos<Event>
+{
+	/// Add an observer to the pharos. This will use a bounded channel of the size of `queue_size`.
+	/// Note that the use of a bounded channel provides backpressure and can slow down the observed
+	/// task.
+	//
+	fn observe( &mut self, queue_size: usize, predicate: Option< Predicate<Event> > ) -> Receiver<Event>
+	{
+		let (tx, rx) = mpsc::channel( queue_size );
+
+		self.observers.push( Some(( tx, predicate )) );
+
+		rx
+	}
+}
+
+
+impl<Event: 'static + Clone + Send> UnboundedObservable<Event> for Pharos<Event>
+{
+	/// Add an observer to the pharos. This will use an unbounded channel. Beware that if the observable
+	/// outpaces the observer, this will lead to growing memory consumption over time.
+	//
+	fn observe_unbounded( &mut self, predicate: Option< Predicate<Event> > ) -> UnboundedReceiver<Event>
+	{
+		let (tx, rx) = mpsc::unbounded();
+
+		self.unbounded.push( Some(( tx, predicate )) );
+
+		rx
 	}
 }

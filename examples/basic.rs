@@ -53,9 +53,9 @@ enum GodessEvent
 //
 impl Observable<GodessEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize ) -> Receiver<GodessEvent>
+	fn observe( &mut self, queue_size: usize, predicate: Option<Predicate<GodessEvent>> ) -> Receiver<GodessEvent>
 	{
-		self.pharos.observe( queue_size )
+		self.pharos.observe( queue_size, predicate )
 	}
 }
 
@@ -71,7 +71,7 @@ fn main()
 
 		// subscribe
 		//
-		let mut events = isis.observe( 3 );
+		let mut events = isis.observe( 3, None );
 
 		// trigger an event
 		//

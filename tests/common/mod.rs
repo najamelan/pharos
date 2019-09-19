@@ -1,5 +1,9 @@
+#![ allow( dead_code ) ]
+
 pub mod import
 {
+	#[ allow( unused_imports )]
+	//
 	pub(crate) use
 	{
 		pharos :: { *                 } ,
@@ -42,6 +46,11 @@ impl Godess
 		self.isis.notify( &IsisEvent::Sail ).await;
 	}
 
+	pub async fn dock( &mut self )
+	{
+		self.isis.notify( &IsisEvent::Dock ).await;
+	}
+
 	pub async fn shine( &mut self )
 	{
 		let evt = NutEvent { time: "midnight".into() };
@@ -56,7 +65,8 @@ impl Godess
 //
 pub enum IsisEvent
 {
-	Sail
+	Sail,
+	Dock,
 }
 
 
@@ -71,35 +81,35 @@ pub struct NutEvent
 
 impl Observable<IsisEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize ) -> Receiver<IsisEvent>
+	fn observe( &mut self, queue_size: usize, predicate: Option< Predicate<IsisEvent> > ) -> Receiver<IsisEvent>
 	{
-		self.isis.observe( queue_size )
+		self.isis.observe( queue_size, predicate )
 	}
 }
 
 
 impl Observable<NutEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize ) -> Receiver<NutEvent>
+	fn observe( &mut self, queue_size: usize, predicate: Option< Predicate<NutEvent> > ) -> Receiver<NutEvent>
 	{
-		self.nut.observe( queue_size )
+		self.nut.observe( queue_size, predicate )
 	}
 }
 
 
 impl UnboundedObservable<IsisEvent> for Godess
 {
-	fn observe_unbounded( &mut self ) -> UnboundedReceiver<IsisEvent>
+	fn observe_unbounded( &mut self, predicate: Option< Predicate<IsisEvent> > ) -> UnboundedReceiver<IsisEvent>
 	{
-		self.isis.observe_unbounded()
+		self.isis.observe_unbounded( predicate )
 	}
 }
 
 
 impl UnboundedObservable<NutEvent> for Godess
 {
-	fn observe_unbounded( &mut self ) -> UnboundedReceiver<NutEvent>
+	fn observe_unbounded( &mut self, predicate: Option< Predicate<NutEvent> > ) -> UnboundedReceiver<NutEvent>
 	{
-		self.nut.observe_unbounded()
+		self.nut.observe_unbounded( predicate )
 	}
 }

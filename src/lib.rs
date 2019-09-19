@@ -38,11 +38,17 @@ pub use
 };
 
 
+/// The type of predicates used to filter events.
+//
+pub type Predicate<Event> = Box<dyn Fn(&Event) -> bool + Send >;
+
 
 mod import
 {
 	pub(crate) use
 	{
+		std:: { fmt },
+
 		futures ::
 		{
 			join,

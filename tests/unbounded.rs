@@ -6,8 +6,10 @@
 // - ✔ send events of 2 types from one object + something other than an enum without data
 // - ✔ accross threads
 // - ✔ test big number of events
-
-
+// - ✔ Basic filter usage, only one event type should be returned.
+// - ✔ A filter that always returns true should get all events.
+// - ✔ A filter that always returns false should not get any events.
+//
 mod common;
 
 use common::{ *, import::* };
@@ -21,7 +23,7 @@ fn basic()
 	{
 		let mut isis = Godess::new();
 
-		let mut events = isis.observe_unbounded();
+		let mut events = isis.observe_unbounded( None );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -44,7 +46,7 @@ fn close_receiver()
 	{
 		let mut isis = Godess::new();
 
-		let mut events = isis.observe_unbounded();
+		let mut events = isis.observe_unbounded( None );
 
 		isis.sail().await;
 		events.close();
@@ -66,8 +68,8 @@ fn one_receiver_drops()
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts = isis.observe_unbounded();
-		let mut shine_evts = isis.observe_unbounded();
+		let mut egypt_evts = isis.observe_unbounded( None );
+		let mut shine_evts = isis.observe_unbounded( None );
 
 		isis.sail().await;
 
@@ -98,8 +100,8 @@ fn types()
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<NutEvent > = isis.observe_unbounded();
+		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded( None );
+		let mut shine_evts: UnboundedReceiver<NutEvent > = isis.observe_unbounded( None );
 
 		isis.sail ().await;
 		isis.shine().await;
@@ -123,8 +125,8 @@ fn threads()
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts = isis.observe_unbounded();
-		let mut shine_evts = isis.observe_unbounded();
+		let mut egypt_evts = isis.observe_unbounded( None );
+		let mut shine_evts = isis.observe_unbounded( None );
 
 
 		thread::spawn( move ||
@@ -157,7 +159,7 @@ fn alot_of_events()
 	{
 		let mut w = Godess::new();
 
-		let mut events = w.observe_unbounded();
+		let mut events = w.observe_unbounded( None );
 
 		let amount = 1000;
 
@@ -172,5 +174,104 @@ fn alot_of_events()
 
 			assert_eq!( IsisEvent::Sail, evt );
 		}
+	});
+}
+
+
+
+
+// Basic filter usage, only Dock should be returned.
+//
+#[ test ]
+//
+fn filter()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = Box::new( |evt: &IsisEvent|
+		{
+			match evt
+			{
+				IsisEvent::Sail => false,
+				IsisEvent::Dock => true ,
+			}
+		});
+
+		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded( Some(filter) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns true should get all events.
+//
+#[ test ]
+//
+fn filter_true()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = Box::new( |_: &IsisEvent| true );
+
+		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded( Some(filter) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns false should not get any events.
+//
+#[ test ]
+//
+fn filter_false()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = Box::new( |_: &IsisEvent| false );
+
+		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded( Some(filter) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( None, events.next().await );
 	});
 }
