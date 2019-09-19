@@ -8,6 +8,7 @@ repository = "najamelan/pharos"
 
 [dependencies]
 [dependencies.futures-preview]
+features = ["async-await", "nightly"]
 version = "^0.3.0-alpha"
 
 [features]

@@ -60,8 +60,10 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 	//
 	pub async fn notify<'a>( &'a mut self, evt: &'a Event )
 	{
-		Self::notify_inner( &mut self.unbounded, &evt ).await;
-		Self::notify_inner( &mut self.observers, &evt ).await;
+		let unbound = Self::notify_inner( &mut self.unbounded, &evt );
+		let bounded = Self::notify_inner( &mut self.observers, &evt );
+
+		join!( unbound, bounded );
 	}
 
 

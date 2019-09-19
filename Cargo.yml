@@ -42,5 +42,5 @@ badges:
 
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha }
+  futures-preview: { version: ^0.3.0-alpha, features: [async-await, nightly] }
 
