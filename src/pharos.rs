@@ -6,8 +6,6 @@ use crate :: { import::* };
 ///
 /// You can of course create several `Pharos` (I know, historical sacrilege) for (different) types
 /// of events.
-///
-// TODO: why do we require Send?
 //
 #[ derive( Clone, Debug ) ]
 //
@@ -116,6 +114,7 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 
 
 		// Put back the observers that we "borrowed"
+		// TODO: compact the vector from time to time?
 		//
 		*observers = fut.await;
 	}

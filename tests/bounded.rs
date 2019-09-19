@@ -2,8 +2,6 @@
 //
 // - ✔ basic functionality
 // - ✔ test closing senders/receivers?
-// - ✔ multiple observers + names coming back correctly
-// - ✔ same names
 // - ✔ send events of 2 types from one object + something other than an enum without data
 // - ✔ accross threads
 // - TODO: test that sender task blocks when observer falls behind (see comments below)
@@ -14,25 +12,16 @@ mod common;
 use common::{ *, import::* };
 
 
-fn run( task: impl Future<Output=()> + 'static )
-{
-	let mut pool  = LocalPool::new();
-	let mut exec  = pool.spawner();
-
-	exec.spawn_local( task ).expect( "Spawn task" );
-	pool.run();
-}
-
 
 #[ test ]
 //
 fn basic()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5 );
+		let mut events = isis.observe( 5 );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -52,11 +41,11 @@ fn basic()
 //
 fn close_receiver()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5 );
+		let mut events = isis.observe( 5 );
 
 		isis.sail().await;
 		events.close();
@@ -74,101 +63,48 @@ fn close_receiver()
 //
 fn one_receiver_drops()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 1 );
-		let mut shine_evts: Receiver<IsisEvent> = isis.observe( 2 );
+		let mut egypt_evts = isis.observe( 1 );
+		let mut shine_evts = isis.observe( 2 );
 
 		isis.sail().await;
 
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, egypt_evts.next().await.unwrap() );
 
 		drop( egypt_evts );
 
 		isis.sail().await;
 		isis.sail().await;
 
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
 	});
 }
 
 
 
-// Have two receivers with different names on the same object and verify that the names are correct on reception.
-//
-#[ test ]
-//
-fn names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<IsisEvent> = isis.observe( 5 );
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
-
-
-// Verify that several observers can set the same name.
-//
-#[ test ]
-//
-fn same_names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<IsisEvent> = isis.observe( 5 );
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
-
-
-// Send different types of objects, and send a struct with data rather than just an enum
+// Send different types of events from same observable, and send a struct with data rather than just an enum
 //
 #[ test ]
 //
 fn types()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
+		// Note that because of the asserts below type inference works here and we don't have to
+		// put type annotation, but I do find it quite obscure and better to be explicit.
+		//
+		let mut shine_evts: Receiver< NutEvent> = isis.observe( 5 );
 		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<NutEvent > = isis.observe( 5 );
 
-		isis.sail ().await;
 		isis.shine().await;
+		isis.sail ().await;
 
 		let shine_evt = shine_evts.next().await.unwrap();
 		let egypt_evt = egypt_evts.next().await.unwrap();
@@ -186,17 +122,17 @@ fn types()
 //
 fn threads()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<NutEvent > = isis.observe( 5 );
+		let mut egypt_evts = isis.observe( 5 );
+		let mut shine_evts = isis.observe( 5 );
 
 
 		thread::spawn( move ||
 		{
-			run( async move
+			block_on( async move
 			{
 				isis.sail ().await;
 				isis.shine().await;
@@ -255,6 +191,6 @@ fn block_sender()
 	exec.spawn_local( receiver ).expect( "Spawn receiver" );
 	exec.spawn_local( remote ).unwrap();
 
-	pool.run();
+	pool.block_on();
 }
 */

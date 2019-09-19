@@ -2,9 +2,7 @@
 //
 // - ✔ basic functionality
 // - ✔ test closing senders/receivers?
-// - ✔ multiple observers + names coming back correctly
 // - ✔ multiple observers + one drops, others continue to see messages
-// - ✔ same names
 // - ✔ send events of 2 types from one object + something other than an enum without data
 // - ✔ accross threads
 // - ✔ test big number of events
@@ -15,25 +13,15 @@ mod common;
 use common::{ *, import::* };
 
 
-fn run( task: impl Future<Output=()> + 'static )
-{
-	let mut pool  = LocalPool::new();
-	let mut exec  = pool.spawner();
-
-	exec.spawn_local( task ).expect( "Spawn task" );
-	pool.run();
-}
-
-
 #[ test ]
 //
 fn basic()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
+		let mut events = isis.observe_unbounded();
 
 		isis.sail().await;
 		isis.sail().await;
@@ -52,11 +40,11 @@ fn basic()
 //
 fn close_receiver()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
+		let mut events = isis.observe_unbounded();
 
 		isis.sail().await;
 		events.close();
@@ -74,12 +62,12 @@ fn close_receiver()
 //
 fn one_receiver_drops()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
+		let mut egypt_evts = isis.observe_unbounded();
+		let mut shine_evts = isis.observe_unbounded();
 
 		isis.sail().await;
 
@@ -87,70 +75,17 @@ fn one_receiver_drops()
 		let egypt_evt = egypt_evts.next().await.unwrap();
 
 		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail , egypt_evt );
+		assert_eq!( IsisEvent::Sail, egypt_evt );
 
 		drop( egypt_evts );
 
 		isis.sail().await;
 		isis.sail().await;
 
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
 	});
 }
-
-
-// Have two receivers with different names on the same object and verify that the names are correct on reception.
-//
-#[ test ]
-//
-fn names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
-
-
-// Verify that several observers can set the same name.
-//
-#[ test ]
-//
-fn same_names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
 
 
 // Send different types of objects, and send a struct with data rather than just an enum
@@ -159,7 +94,7 @@ fn same_names()
 //
 fn types()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
@@ -184,17 +119,17 @@ fn types()
 //
 fn threads()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<NutEvent > = isis.observe_unbounded();
+		let mut egypt_evts = isis.observe_unbounded();
+		let mut shine_evts = isis.observe_unbounded();
 
 
 		thread::spawn( move ||
 		{
-			run( async move
+			block_on( async move
 			{
 				isis.sail ().await;
 				isis.shine().await;
@@ -218,11 +153,11 @@ fn threads()
 //
 fn alot_of_events()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut w = Godess::new();
 
-		let mut events: UnboundedReceiver<IsisEvent> = w.observe_unbounded();
+		let mut events = w.observe_unbounded();
 
 		let amount = 1000;
 

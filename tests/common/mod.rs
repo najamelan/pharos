@@ -2,15 +2,14 @@ pub mod import
 {
 	pub(crate) use
 	{
-		pharos :: { *                                 } ,
-		std    :: { sync::Arc, future::Future, thread } ,
+		pharos :: { *                 } ,
+		std    :: { sync::Arc, thread } ,
 
 		futures ::
 		{
 			channel::mpsc :: Receiver          ,
 			channel::mpsc :: UnboundedReceiver ,
-			executor      :: LocalPool         ,
-			task          :: LocalSpawnExt     ,
+			executor      :: block_on          ,
 			stream        :: StreamExt         ,
 		},
 	};
