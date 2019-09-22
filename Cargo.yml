@@ -42,5 +42,10 @@ badges:
 
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha, features: [async-await, nightly] }
+  futures-preview : { version: ^0.3.0-alpha, features: [async-await, nightly] }
+  pin-project     : ^0.4.0-beta
 
+
+dev-dependencies:
+
+  assert_matches: ^1

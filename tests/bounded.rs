@@ -21,9 +21,8 @@ fn basic()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut events = isis.observe( 5, None );
+		let mut isis   = Godess::new();
+		let mut events = isis.observe( Channel::Bounded( 5 ).into() );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -45,9 +44,8 @@ fn close_receiver()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut events = isis.observe( 5, None );
+		let mut isis   = Godess::new();
+		let mut events = isis.observe( Channel::Bounded( 5 ).into() );
 
 		isis.sail().await;
 		events.close();
@@ -67,10 +65,9 @@ fn one_receiver_drops()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts = isis.observe( 1, None );
-		let mut shine_evts = isis.observe( 2, None );
+		let mut isis       = Godess::new();
+		let mut egypt_evts = isis.observe( Channel::Bounded( 1 ).into() );
+		let mut shine_evts = isis.observe( Channel::Bounded( 2 ).into() );
 
 		isis.sail().await;
 
@@ -102,8 +99,8 @@ fn types()
 		// Note that because of the asserts below type inference works here and we don't have to
 		// put type annotation, but I do find it quite obscure and better to be explicit.
 		//
-		let mut shine_evts: Receiver< NutEvent> = isis.observe( 5, None );
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5, None );
+		let mut shine_evts: Events<NutEvent>  = isis.observe( Channel::Bounded( 5 ).into() );
+		let mut egypt_evts: Events<IsisEvent> = isis.observe( Channel::Bounded( 5 ).into() );
 
 		isis.shine().await;
 		isis.sail ().await;
@@ -126,10 +123,9 @@ fn threads()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts = isis.observe( 5, None );
-		let mut shine_evts = isis.observe( 5, None );
+		let mut isis       = Godess::new();
+		let mut egypt_evts = isis.observe( Channel::Bounded( 5 ).into() );
+		let mut shine_evts = isis.observe( Channel::Bounded( 5 ).into() );
 
 
 		thread::spawn( move ||
@@ -217,7 +213,10 @@ fn filter()
 			}
 		};
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some( Filter::Pointer(filter) ) );
+
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter( filter );
+
+		let mut events = isis.observe( opts );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -247,7 +246,10 @@ fn filter_true()
 
 		let filter = |_: &IsisEvent| true;
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some( Filter::Pointer(filter) ) );
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter( filter );
+
+
+		let mut events = isis.observe( opts );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -280,7 +282,10 @@ fn filter_false()
 
 		let filter = |_: &IsisEvent| false;
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some( Filter::Pointer(filter) ) );
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter( filter );
+
+
+		let mut events = isis.observe( opts );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -304,7 +309,7 @@ fn filter_move()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis   = Godess::new();
 		let v: Vec<u8> = Vec::new();
 
 		let filter = move |evt: &IsisEvent|
@@ -317,7 +322,10 @@ fn filter_move()
 			}
 		};
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5, Filter::Closure( Box::new(filter) ).into() );
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter_boxed( filter );
+
+
+		let mut events = isis.observe( opts );
 
 		isis.sail().await;
 		isis.sail().await;

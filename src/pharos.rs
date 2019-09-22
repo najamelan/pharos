@@ -1,33 +1,30 @@
-use crate :: { import::*, Observable, UnboundedObservable, Filter };
+use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender };
 
 
 /// The Pharos lighthouse. When you implement Observable on your type, you can forward
-/// the [`observe`](Pharos::observe) method to Pharos and call notify on it.
+/// the [`observe`](Observable::observe) method to Pharos and call notify on it.
 ///
 /// You can of course create several `Pharos` (I know, historical sacrilege) for (different) types
 /// of events.
 //
-pub struct Pharos<Event: Clone + 'static + Send>
+pub struct Pharos<Event>  where Event: 'static + Clone + Send
 {
-	observers: Vec<Option< (Sender         <Event>, Option<Filter<Event>>) >>,
-	unbounded: Vec<Option< (UnboundedSender<Event>, Option<Filter<Event>>) >>,
+	observers: Vec<Option< Sender<Event> >>,
 }
 
 
 
-// TODO: figure out what we really want here...
-//
-impl<Event: Clone + 'static + Send> fmt::Debug for Pharos<Event>
+impl<Event> fmt::Debug for Pharos<Event>  where Event: 'static + Clone + Send
 {
 	fn fmt( &self, f: &mut fmt::Formatter<'_> ) -> fmt::Result
 	{
-		write!( f, "Pharos" )
+		write!( f, "pharos::Pharos<{}>", type_name::<Event>() )
 	}
 }
 
 
 
-impl<Event: Clone + 'static + Send> Pharos<Event>
+impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 {
 	/// Create a new Pharos. May it's light guide you to safe harbour.
 	//
@@ -40,74 +37,39 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 
 	/// Notify all observers of Event evt.
 	//
-	pub async fn notify<'a>( &'a mut self, evt: &'a Event )
-	{
-		let unbound = Self::notify_inner( &mut self.unbounded, &evt );
-		let bounded = Self::notify_inner( &mut self.observers, &evt );
-
-		join!( unbound, bounded );
-	}
-
-
-
-	// Helper method to abstract out over bounded and unbounded observers.
-	//
-	async fn notify_inner<'a>
-	(
-		observers: &'a mut Vec< Option< (impl Sink<Event> + Unpin + Clone, Option<Filter<Event>>) > > ,
-		evt: &'a Event
-	)
+	pub async fn notify( &mut self, evt: &Event )
 	{
 		// Try to send to all channels in parallel, so they can all start processing this event
 		// even if one of them is blocked on a full queue.
 		//
-		// We can not have mutable access in parallel, so we destructure our vector. This probably
+		// We can not have mutable access in parallel, so we take options out and put them back. This
 		// allocates a new vector every time. If you have a better idea, please open an issue!
 		//
 		// The output of the join is a vec of options with the disconnected observers removed.
 		//
 		let fut = join_all
 		(
-			( 0..observers.len() ).map( |i|
+			( 0..self.observers.len() ).map( |i|
 			{
+				let opt = self.observers[i].take();
 				let evt = evt.clone();
-				let opt = observers[i].take();
 
 				async move
 				{
-					if let Some( (mut tx, filter_opt) ) = opt
+					let mut new = None;
+
+					if let Some( mut s ) = opt
 					{
-						// If we have a filter, run it, otherwise return true.
-						// we return the filter, since we need to give it back at the end.
-						//
-						let (go, pre_opt2) = filter_opt.map_or( (true, None), |mut filter|
+						match s.notify( &evt ).await
 						{
-							let filtered = match filter
-							{
-								Filter::Pointer(ref     p) => p( &evt ),
-								Filter::Closure(ref mut p) => p( &evt ),
-							};
-
-							(filtered, Some(filter))
-						});
-
-						// We count on the send not being executed if go is false.
-						// If an error is returned, it's disconnected, drop it.
-						//
-						if go && tx.send( evt ).await.is_err()
-						{
-							None
+							true  => new = Some( s ),
+							false => {}
 						}
-
-						// Put it back after use
-						//
-						else { Some( (tx, pre_opt2) ) }
 					}
 
-					// It was already none
-					//
-					else { None }
+					new
 				}
+
 			})
 		);
 
@@ -115,53 +77,56 @@ impl<Event: Clone + 'static + Send> Pharos<Event>
 		// Put back the observers that we "borrowed"
 		// TODO: compact the vector from time to time?
 		//
-		*observers = fut.await;
+		self.observers = fut.await;
 	}
 }
 
 
 
-impl<Event: Clone + 'static + Send> Default for Pharos<Event>
+impl<Event> Default for Pharos<Event>  where Event: 'static + Clone + Send
 {
 	fn default() -> Self
 	{
 		Self
 		{
 			observers: Vec::new(),
-			unbounded: Vec::new(),
 		}
 	}
 }
 
 
-impl<Event: 'static + Clone + Send> Observable<Event> for Pharos<Event>
+impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + Send
 {
 	/// Add an observer to the pharos. This will use a bounded channel of the size of `queue_size`.
 	/// Note that the use of a bounded channel provides backpressure and can slow down the observed
 	/// task.
 	//
-	fn observe( &mut self, queue_size: usize, predicate: Option< Filter<Event> > ) -> Receiver<Event>
+	fn observe( &mut self, options: ObserveConfig<Event> ) -> Events<Event>
 	{
-		let (tx, rx) = mpsc::channel( queue_size );
+		let (events, sender) = Events::new( options );
 
-		self.observers.push( Some(( tx, predicate )) );
+		self.observers.push( Some(sender) );
 
-		rx
+		events
 	}
 }
 
 
-impl<Event: 'static + Clone + Send> UnboundedObservable<Event> for Pharos<Event>
+
+
+
+#[ cfg( test ) ]
+//
+mod tests
 {
-	/// Add an observer to the pharos. This will use an unbounded channel. Beware that if the observable
-	/// outpaces the observer, this will lead to growing memory consumption over time.
+	use super::*;
+
+	#[test]
 	//
-	fn observe_unbounded( &mut self, predicate: Option< Filter<Event> > ) -> UnboundedReceiver<Event>
+	fn debug()
 	{
-		let (tx, rx) = mpsc::unbounded();
+		let lighthouse = Pharos::<bool>::new();
 
-		self.unbounded.push( Some(( tx, predicate )) );
-
-		rx
+		assert_eq!( "pharos::Pharos<bool>", &format!( "{:?}", lighthouse ) );
 	}
 }

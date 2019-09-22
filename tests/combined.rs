@@ -15,11 +15,11 @@ fn both()
 	{
 		let mut isis = Godess::new();
 
-		let mut events:          Receiver<IsisEvent> = isis.observe( 5, None )       ;
-		let mut ubevts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded( None) ;
+		let mut events: Events<IsisEvent> = isis.observe( Channel::Bounded( 5 ).into() );
+		let mut nuevts: Events<NutEvent>  = isis.observe( Channel::Bounded( 5 ).into() );
 
-		let mut nuevts:          Receiver<NutEvent>  = isis.observe( 5, None )       ;
-		let mut ubnuts: UnboundedReceiver<NutEvent>  = isis.observe_unbounded( None) ;
+		let mut ubevts: Events<IsisEvent> = isis.observe( ObserveConfig::default()     );
+		let mut ubnuts: Events<NutEvent>  = isis.observe( ObserveConfig::default()     );
 
 		isis.sail ().await;
 		isis.shine().await;
