@@ -28,19 +28,17 @@
 
 mod observable;
 mod pharos    ;
+mod filter    ;
 
 
 
 pub use
 {
 	self::pharos :: { Pharos                          } ,
+	filter       :: { Filter                          } ,
 	observable   :: { Observable, UnboundedObservable } ,
 };
 
-
-/// The type of predicates used to filter events.
-//
-pub type Predicate<Event> = Box<dyn Fn(&Event) -> bool + Send >;
 
 
 mod import

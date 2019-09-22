@@ -81,7 +81,7 @@ pub struct NutEvent
 
 impl Observable<IsisEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize, predicate: Option< Predicate<IsisEvent> > ) -> Receiver<IsisEvent>
+	fn observe( &mut self, queue_size: usize, predicate: Option< Filter<IsisEvent> > ) -> Receiver<IsisEvent>
 	{
 		self.isis.observe( queue_size, predicate )
 	}
@@ -90,7 +90,7 @@ impl Observable<IsisEvent> for Godess
 
 impl Observable<NutEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize, predicate: Option< Predicate<NutEvent> > ) -> Receiver<NutEvent>
+	fn observe( &mut self, queue_size: usize, predicate: Option< Filter<NutEvent> > ) -> Receiver<NutEvent>
 	{
 		self.nut.observe( queue_size, predicate )
 	}
@@ -99,7 +99,7 @@ impl Observable<NutEvent> for Godess
 
 impl UnboundedObservable<IsisEvent> for Godess
 {
-	fn observe_unbounded( &mut self, predicate: Option< Predicate<IsisEvent> > ) -> UnboundedReceiver<IsisEvent>
+	fn observe_unbounded( &mut self, predicate: Option< Filter<IsisEvent> > ) -> UnboundedReceiver<IsisEvent>
 	{
 		self.isis.observe_unbounded( predicate )
 	}
@@ -108,7 +108,7 @@ impl UnboundedObservable<IsisEvent> for Godess
 
 impl UnboundedObservable<NutEvent> for Godess
 {
-	fn observe_unbounded( &mut self, predicate: Option< Predicate<NutEvent> > ) -> UnboundedReceiver<NutEvent>
+	fn observe_unbounded( &mut self, predicate: Option< Filter<NutEvent> > ) -> UnboundedReceiver<NutEvent>
 	{
 		self.nut.observe_unbounded( predicate )
 	}

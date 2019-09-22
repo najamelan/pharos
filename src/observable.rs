@@ -1,4 +1,4 @@
-use crate :: { import::*, Predicate };
+use crate :: { import::*, Filter };
 
 /// Indicate that a type is observable. You can call [`observe`](Observable::observe) to get a
 /// stream of events.
@@ -14,7 +14,7 @@ pub trait Observable<Event>
 	/// The predicate parameter allows filtering the events that should be send to this observer.
 	/// It receives a reference to the event. If the predicate returns true, it will be sent.
 	//
-	fn observe( &mut self, queue_size: usize, predicate: Option< Predicate<Event> > ) -> Receiver<Event>;
+	fn observe( &mut self, queue_size: usize, predicate: Option< Filter<Event> > ) -> Receiver<Event>;
 }
 
 
@@ -28,5 +28,5 @@ pub trait UnboundedObservable<Event>
 	/// Add an observer to the observable. This will use an unbounded channel. Beware that if the observable
 	/// outpaces the observer, this will lead to growing memory consumption over time.
 	//
-	fn observe_unbounded( &mut self, predicate: Option<Predicate<Event>> ) -> UnboundedReceiver<Event>;
+	fn observe_unbounded( &mut self, predicate: Option<Filter<Event>> ) -> UnboundedReceiver<Event>;
 }

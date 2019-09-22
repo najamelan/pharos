@@ -208,16 +208,16 @@ fn filter()
 	{
 		let mut isis = Godess::new();
 
-		let filter = Box::new( |evt: &IsisEvent|
+		let filter = |evt: &IsisEvent|
 		{
 			match evt
 			{
 				IsisEvent::Sail => false,
 				IsisEvent::Dock => true ,
 			}
-		});
+		};
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some(filter) );
+		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some( Filter::Pointer(filter) ) );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -245,9 +245,9 @@ fn filter_true()
 	{
 		let mut isis = Godess::new();
 
-		let filter = Box::new( |_: &IsisEvent| true );
+		let filter = |_: &IsisEvent| true;
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some(filter) );
+		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some( Filter::Pointer(filter) ) );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -278,9 +278,9 @@ fn filter_false()
 	{
 		let mut isis = Godess::new();
 
-		let filter = Box::new( |_: &IsisEvent| false );
+		let filter = |_: &IsisEvent| false;
 
-		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some(filter) );
+		let mut events: Receiver<IsisEvent> = isis.observe( 5, Some( Filter::Pointer(filter) ) );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -293,3 +293,44 @@ fn filter_false()
 		assert_eq!( None, events.next().await );
 	});
 }
+
+
+
+// Make sure we can move something into the closure, only Dock should be returned.
+//
+#[ test ]
+//
+fn filter_move()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+		let v: Vec<u8> = Vec::new();
+
+		let filter = move |evt: &IsisEvent|
+		{
+			match evt
+			{
+				IsisEvent::Sail if v.is_empty() => false,
+				IsisEvent::Dock if v.is_empty() => true ,
+				_                               => false,
+			}
+		};
+
+		let mut events: Receiver<IsisEvent> = isis.observe( 5, Filter::Closure( Box::new(filter) ).into() );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+

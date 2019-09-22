@@ -53,7 +53,7 @@ enum GodessEvent
 //
 impl Observable<GodessEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize, predicate: Option<Predicate<GodessEvent>> ) -> Receiver<GodessEvent>
+	fn observe( &mut self, queue_size: usize, predicate: Option<Filter<GodessEvent>> ) -> Receiver<GodessEvent>
 	{
 		self.pharos.observe( queue_size, predicate )
 	}
