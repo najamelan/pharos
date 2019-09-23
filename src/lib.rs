@@ -72,12 +72,4 @@ mod import
 			} ,
 		},
 	};
-
-
-	#[ cfg( test ) ]
-	//
-	pub(crate) use
-	{
-		assert_matches :: { assert_matches } ,
-	};
 }
