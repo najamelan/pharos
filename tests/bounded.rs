@@ -2,37 +2,27 @@
 //
 // - ✔ basic functionality
 // - ✔ test closing senders/receivers?
-// - ✔ multiple observers + names coming back correctly
-// - ✔ same names
 // - ✔ send events of 2 types from one object + something other than an enum without data
 // - ✔ accross threads
 // - TODO: test that sender task blocks when observer falls behind (see comments below)
-
-
+// - ✔ Basic filter usage, only one event type should be returned.
+// - ✔ A filter that always returns true should get all events.
+// - ✔ A filter that always returns false should not get any events.
+//
 mod common;
 
 use common::{ *, import::* };
 
-
-fn run( task: impl Future<Output=()> + 'static )
-{
-	let mut pool  = LocalPool::new();
-	let mut exec  = pool.spawner();
-
-	exec.spawn_local( task ).expect( "Spawn task" );
-	pool.run();
-}
 
 
 #[ test ]
 //
 fn basic()
 {
-	run( async move
+	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut events: Receiver<IsisEvent> = isis.observe( 5 );
+		let mut isis   = Godess::new();
+		let mut events = isis.observe( Channel::Bounded( 5 ).into() );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -52,11 +42,10 @@ fn basic()
 //
 fn close_receiver()
 {
-	run( async move
+	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut events: Receiver<IsisEvent> = isis.observe( 5 );
+		let mut isis   = Godess::new();
+		let mut events = isis.observe( Channel::Bounded( 5 ).into() );
 
 		isis.sail().await;
 		events.close();
@@ -74,101 +63,47 @@ fn close_receiver()
 //
 fn one_receiver_drops()
 {
-	run( async move
+	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 1 );
-		let mut shine_evts: Receiver<IsisEvent> = isis.observe( 2 );
+		let mut isis       = Godess::new();
+		let mut egypt_evts = isis.observe( Channel::Bounded( 1 ).into() );
+		let mut shine_evts = isis.observe( Channel::Bounded( 2 ).into() );
 
 		isis.sail().await;
 
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, egypt_evts.next().await.unwrap() );
 
 		drop( egypt_evts );
 
 		isis.sail().await;
 		isis.sail().await;
 
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
 	});
 }
 
 
 
-// Have two receivers with different names on the same object and verify that the names are correct on reception.
-//
-#[ test ]
-//
-fn names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<IsisEvent> = isis.observe( 5 );
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
-
-
-// Verify that several observers can set the same name.
-//
-#[ test ]
-//
-fn same_names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<IsisEvent> = isis.observe( 5 );
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
-
-
-// Send different types of objects, and send a struct with data rather than just an enum
+// Send different types of events from same observable, and send a struct with data rather than just an enum
 //
 #[ test ]
 //
 fn types()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<NutEvent > = isis.observe( 5 );
+		// Note that because of the asserts below type inference works here and we don't have to
+		// put type annotation, but I do find it quite obscure and better to be explicit.
+		//
+		let mut shine_evts: Events<NutEvent>  = isis.observe( Channel::Bounded( 5 ).into() );
+		let mut egypt_evts: Events<IsisEvent> = isis.observe( Channel::Bounded( 5 ).into() );
 
-		isis.sail ().await;
 		isis.shine().await;
+		isis.sail ().await;
 
 		let shine_evt = shine_evts.next().await.unwrap();
 		let egypt_evt = egypt_evts.next().await.unwrap();
@@ -186,17 +121,16 @@ fn types()
 //
 fn threads()
 {
-	run( async move
+	block_on( async move
 	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: Receiver<IsisEvent> = isis.observe( 5 );
-		let mut shine_evts: Receiver<NutEvent > = isis.observe( 5 );
+		let mut isis       = Godess::new();
+		let mut egypt_evts = isis.observe( Channel::Bounded( 5 ).into() );
+		let mut shine_evts = isis.observe( Channel::Bounded( 5 ).into() );
 
 
 		thread::spawn( move ||
 		{
-			run( async move
+			block_on( async move
 			{
 				isis.sail ().await;
 				isis.shine().await;
@@ -255,6 +189,156 @@ fn block_sender()
 	exec.spawn_local( receiver ).expect( "Spawn receiver" );
 	exec.spawn_local( remote ).unwrap();
 
-	pool.run();
+	pool.block_on();
 }
 */
+
+
+// Basic filter usage, only Dock should be returned.
+//
+#[ test ]
+//
+fn filter()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = |evt: &IsisEvent|
+		{
+			match evt
+			{
+				IsisEvent::Sail => false,
+				IsisEvent::Dock => true ,
+			}
+		};
+
+
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter( filter );
+
+		let mut events = isis.observe( opts );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns true should get all events.
+//
+#[ test ]
+//
+fn filter_true()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = |_: &IsisEvent| true;
+
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter( filter );
+
+
+		let mut events = isis.observe( opts );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns false should not get any events.
+//
+#[ test ]
+//
+fn filter_false()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = |_: &IsisEvent| false;
+
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter( filter );
+
+
+		let mut events = isis.observe( opts );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( None, events.next().await );
+	});
+}
+
+
+
+// Make sure we can move something into the closure, only Dock should be returned.
+//
+#[ test ]
+//
+fn filter_move()
+{
+	block_on( async move
+	{
+		let mut isis   = Godess::new();
+		let v: Vec<u8> = Vec::new();
+
+		let filter = move |evt: &IsisEvent|
+		{
+			match evt
+			{
+				IsisEvent::Sail if v.is_empty() => false,
+				IsisEvent::Dock if v.is_empty() => true ,
+				_                               => false,
+			}
+		};
+
+		let opts = ObserveConfig::from( Channel::Bounded( 5 ) ).filter_boxed( filter );
+
+
+		let mut events = isis.observe( opts );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+

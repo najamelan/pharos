@@ -2,38 +2,28 @@
 //
 // - ✔ basic functionality
 // - ✔ test closing senders/receivers?
-// - ✔ multiple observers + names coming back correctly
 // - ✔ multiple observers + one drops, others continue to see messages
-// - ✔ same names
 // - ✔ send events of 2 types from one object + something other than an enum without data
 // - ✔ accross threads
 // - ✔ test big number of events
-
-
+// - ✔ Basic filter usage, only one event type should be returned.
+// - ✔ A filter that always returns true should get all events.
+// - ✔ A filter that always returns false should not get any events.
+//
 mod common;
 
 use common::{ *, import::* };
-
-
-fn run( task: impl Future<Output=()> + 'static )
-{
-	let mut pool  = LocalPool::new();
-	let mut exec  = pool.spawner();
-
-	exec.spawn_local( task ).expect( "Spawn task" );
-	pool.run();
-}
 
 
 #[ test ]
 //
 fn basic()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
+		let mut events = isis.observe( ObserveConfig::default() );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -52,11 +42,11 @@ fn basic()
 //
 fn close_receiver()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut events: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
+		let mut events = isis.observe( ObserveConfig::default() );
 
 		isis.sail().await;
 		events.close();
@@ -74,12 +64,12 @@ fn close_receiver()
 //
 fn one_receiver_drops()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
+		let mut egypt_evts = isis.observe( ObserveConfig::default() );
+		let mut shine_evts = isis.observe( ObserveConfig::default() );
 
 		isis.sail().await;
 
@@ -87,70 +77,17 @@ fn one_receiver_drops()
 		let egypt_evt = egypt_evts.next().await.unwrap();
 
 		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail , egypt_evt );
+		assert_eq!( IsisEvent::Sail, egypt_evt );
 
 		drop( egypt_evts );
 
 		isis.sail().await;
 		isis.sail().await;
 
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		assert_eq!( IsisEvent::Sail, shine_evt );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, shine_evts.next().await.unwrap() );
 	});
 }
-
-
-// Have two receivers with different names on the same object and verify that the names are correct on reception.
-//
-#[ test ]
-//
-fn names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
-
-
-// Verify that several observers can set the same name.
-//
-#[ test ]
-//
-fn same_names()
-{
-	run( async move
-	{
-		let mut isis = Godess::new();
-
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-
-		isis.sail().await;
-
-		let shine_evt = shine_evts.next().await.unwrap();
-		let egypt_evt = egypt_evts.next().await.unwrap();
-
-		assert_eq!( IsisEvent::Sail, shine_evt );
-		assert_eq!( IsisEvent::Sail, egypt_evt );
-	});
-}
-
 
 
 // Send different types of objects, and send a struct with data rather than just an enum
@@ -159,12 +96,12 @@ fn same_names()
 //
 fn types()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<NutEvent > = isis.observe_unbounded();
+		let mut egypt_evts: Events<IsisEvent> = isis.observe( ObserveConfig::default() );
+		let mut shine_evts: Events<NutEvent > = isis.observe( ObserveConfig::default() );
 
 		isis.sail ().await;
 		isis.shine().await;
@@ -184,17 +121,17 @@ fn types()
 //
 fn threads()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut isis = Godess::new();
 
-		let mut egypt_evts: UnboundedReceiver<IsisEvent> = isis.observe_unbounded();
-		let mut shine_evts: UnboundedReceiver<NutEvent > = isis.observe_unbounded();
+		let mut egypt_evts = isis.observe( ObserveConfig::default() );
+		let mut shine_evts = isis.observe( ObserveConfig::default() );
 
 
 		thread::spawn( move ||
 		{
-			run( async move
+			block_on( async move
 			{
 				isis.sail ().await;
 				isis.shine().await;
@@ -218,11 +155,11 @@ fn threads()
 //
 fn alot_of_events()
 {
-	run( async move
+	block_on( async move
 	{
 		let mut w = Godess::new();
 
-		let mut events: UnboundedReceiver<IsisEvent> = w.observe_unbounded();
+		let mut events = w.observe( ObserveConfig::default() );
 
 		let amount = 1000;
 
@@ -239,3 +176,143 @@ fn alot_of_events()
 		}
 	});
 }
+
+
+
+
+
+// Basic filter usage, only Dock should be returned.
+//
+#[ test ]
+//
+fn filter()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = |evt: &IsisEvent|
+		{
+			match evt
+			{
+				IsisEvent::Sail => false,
+				IsisEvent::Dock => true ,
+			}
+		};
+
+		let mut events = isis.observe( ObserveConfig::default().filter( filter ) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns true should get all events.
+//
+#[ test ]
+//
+fn filter_true()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = |_: &IsisEvent| true;
+
+		let mut events = isis.observe( ObserveConfig::default().filter( filter ) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Sail, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+
+
+
+// A filter that always returns false should not get any events.
+//
+#[ test ]
+//
+fn filter_false()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+
+		let filter = |_: &IsisEvent| false;
+
+		let mut events = isis.observe( ObserveConfig::default().filter( filter ) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( None, events.next().await );
+	});
+}
+
+
+
+// Make sure we can move something into the closure, only Dock should be returned.
+//
+#[ test ]
+//
+fn filter_move()
+{
+	block_on( async move
+	{
+		let mut isis = Godess::new();
+		let v: Vec<u8> = Vec::new();
+
+		let filter = move |evt: &IsisEvent|
+		{
+			match evt
+			{
+				IsisEvent::Sail if v.is_empty() => false,
+				IsisEvent::Dock if v.is_empty() => true ,
+				_                               => false,
+			}
+		};
+
+		let mut events = isis.observe( ObserveConfig::default().filter_boxed( filter ) );
+
+		isis.sail().await;
+		isis.sail().await;
+		isis.dock().await;
+		isis.dock().await;
+		isis.sail().await;
+
+		drop( isis );
+
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( IsisEvent::Dock, events.next().await.unwrap() );
+		assert_eq!( None           , events.next().await          );
+	});
+}
+

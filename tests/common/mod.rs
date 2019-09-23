@@ -1,16 +1,19 @@
+#![ allow( dead_code ) ]
+
 pub mod import
 {
+	#[ allow( unused_imports )]
+	//
 	pub(crate) use
 	{
-		pharos :: { *                                 } ,
-		std    :: { sync::Arc, future::Future, thread } ,
+		pharos :: { *                 } ,
+		std    :: { sync::Arc, thread } ,
 
 		futures ::
 		{
 			channel::mpsc :: Receiver          ,
 			channel::mpsc :: UnboundedReceiver ,
-			executor      :: LocalPool         ,
-			task          :: LocalSpawnExt     ,
+			executor      :: block_on          ,
 			stream        :: StreamExt         ,
 		},
 	};
@@ -33,14 +36,19 @@ impl Godess
 	{
 		Self
 		{
-			isis: Pharos::new(),
-			nut : Pharos::new(),
+			isis: Pharos::default(),
+			nut : Pharos::default(),
 		}
 	}
 
 	pub async fn sail( &mut self )
 	{
 		self.isis.notify( &IsisEvent::Sail ).await;
+	}
+
+	pub async fn dock( &mut self )
+	{
+		self.isis.notify( &IsisEvent::Dock ).await;
 	}
 
 	pub async fn shine( &mut self )
@@ -57,7 +65,8 @@ impl Godess
 //
 pub enum IsisEvent
 {
-	Sail
+	Sail,
+	Dock,
 }
 
 
@@ -72,35 +81,18 @@ pub struct NutEvent
 
 impl Observable<IsisEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize ) -> Receiver<IsisEvent>
+	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Events<IsisEvent>
 	{
-		self.isis.observe( queue_size )
+		self.isis.observe( options )
 	}
 }
 
 
 impl Observable<NutEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize ) -> Receiver<NutEvent>
+	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Events<NutEvent>
 	{
-		self.nut.observe( queue_size )
+		self.nut.observe( options )
 	}
 }
 
-
-impl UnboundedObservable<IsisEvent> for Godess
-{
-	fn observe_unbounded( &mut self ) -> UnboundedReceiver<IsisEvent>
-	{
-		self.isis.observe_unbounded()
-	}
-}
-
-
-impl UnboundedObservable<NutEvent> for Godess
-{
-	fn observe_unbounded( &mut self ) -> UnboundedReceiver<NutEvent>
-	{
-		self.nut.observe_unbounded()
-	}
-}

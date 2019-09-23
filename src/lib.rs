@@ -26,33 +26,58 @@
 )]
 
 
-mod observable;
-mod pharos    ;
+mod error      ;
+mod events     ;
+mod observable ;
+mod pharos     ;
+mod filter     ;
 
 
 
 pub use
 {
-	self::pharos :: { Pharos                          } ,
-	observable   :: { Observable, UnboundedObservable } ,
+	self::pharos :: { Pharos                             } ,
+	filter       :: { Filter                             } ,
+	observable   :: { Observable, ObserveConfig, Channel } ,
+	events       :: { Events                             } ,
 };
 
+
+pub(crate) use
+{
+	error :: { Error } ,
+};
 
 
 mod import
 {
 	pub(crate) use
 	{
+		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name } ,
+		std            :: { task::{ Poll, Context }, pin::Pin                           } ,
+		pin_project    :: { project, pin_project                                        } ,
+
 		futures ::
 		{
-			future::{ join_all }, Sink, SinkExt,
+			future::{ join_all }, Stream, Sink, SinkExt,
 
 			channel::mpsc::
 			{
-				self         ,
-				Sender         , Receiver          ,
-				UnboundedSender, UnboundedReceiver ,
+				self                                      ,
+				Sender            as FutSender            ,
+				Receiver          as FutReceiver          ,
+				UnboundedSender   as FutUnboundedSender   ,
+				UnboundedReceiver as FutUnboundedReceiver ,
+				SendError         as FutSendError         ,
 			} ,
 		},
+	};
+
+
+	#[ cfg( test ) ]
+	//
+	pub(crate) use
+	{
+		assert_matches :: { assert_matches } ,
 	};
 }

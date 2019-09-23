@@ -1,14 +1,7 @@
 use
 {
-	pharos :: { * } ,
-
-	futures ::
-	{
-		channel::mpsc :: Receiver      ,
-		executor      :: LocalPool     ,
-		task          :: LocalSpawnExt ,
-		stream        :: StreamExt     ,
-	},
+	pharos  :: { *                             } ,
+	futures :: { executor::block_on, StreamExt } ,
 };
 
 
@@ -21,7 +14,7 @@ impl Godess
 {
 	fn new() -> Self
 	{
-		Self { pharos: Pharos::new() }
+		Self { pharos: Pharos::default() }
 	}
 
 	// Send Godess sailing so she can tweet about it!
@@ -31,7 +24,6 @@ impl Godess
 		self.pharos.notify( &GodessEvent::Sailing ).await;
 	}
 }
-
 
 
 // Event types need to implement clone, but you can wrap them in Arc if not. Also they will be
@@ -53,39 +45,40 @@ enum GodessEvent
 //
 impl Observable<GodessEvent> for Godess
 {
-	fn observe( &mut self, queue_size: usize ) -> Receiver<GodessEvent>
+	fn observe( &mut self, options: ObserveConfig<GodessEvent>) -> Events<GodessEvent>
 	{
-		self.pharos.observe( queue_size )
+		self.pharos.observe( options )
 	}
 }
 
 
 fn main()
 {
-	let mut pool  = LocalPool::new();
-	let mut exec  = pool.spawner();
-
 	let program = async move
 	{
 		let mut isis = Godess::new();
 
-		// subscribe
+		// subscribe, the observe method takes options to let you choose:
+		// - channel type (bounded/unbounded)
+		// - a predicate to filter events
 		//
-		let mut events = isis.observe( 3 );
+		let mut events = isis.observe( Channel::Bounded( 3 ).into() );
 
 		// trigger an event
 		//
 		isis.sail().await;
 
-		// read from stream
+		// read from stream and let's put on the console what the event looks like.
 		//
-		let from_stream = events.next().await.unwrap();
+		let evt = dbg!( events.next().await.unwrap() );
 
-		dbg!( from_stream );
-		assert_eq!( GodessEvent::Sailing, from_stream );
+		// After this reads on the event stream will return None.
+		//
+		drop( isis );
+
+		assert_eq!( GodessEvent::Sailing, evt );
+		assert_eq!( None, events.next().await );
 	};
 
-	exec.spawn_local( program ).expect( "Spawn program" );
-
-	pool.run();
+	block_on( program );
 }
