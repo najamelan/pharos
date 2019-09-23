@@ -22,20 +22,20 @@ use crate :: { import::* };
 /// //
 /// let predicate = move |_: &bool| { a; true };
 ///
-/// let filter = Filter::<bool>::closure( predicate );
+/// let filter = Filter::Closure( Box::new(predicate) );
 ///
 /// // This one does not capture anything, so it can be stored as a function pointer
 /// // without boxing.
 /// //
 /// let predicate = move |_: &bool| { true };
 ///
-/// let filter = Filter::<bool>::pointer( predicate );
+/// let filter = Filter::Pointer( predicate );
 ///
 /// // You can also use actual functions as filters.
 /// //
 /// fn predicate_function( event: &bool ) -> bool { true }
 ///
-/// let filter = Filter::<bool>::pointer( predicate_function );
+/// let filter = Filter::Pointer( predicate_function );
 /// ```
 //
 pub enum Filter<Event>
@@ -55,24 +55,6 @@ pub enum Filter<Event>
 
 impl<Event> Filter<Event>  where Event: Clone + 'static + Send
 {
-	/// Construct a filter from a closure that captures something from it's environment. This will
-	/// be boxed and stored under the [Filter::Closure] variant. To avoid boxing, do not capture
-	/// any variables from the environment and use [Filter::pointer].
-	//
-	pub fn closure<F>( predicate: F ) -> Self where  F: FnMut(&Event) -> bool + Send + 'static
-	{
-		Self::Closure( Box::new( predicate ) )
-	}
-
-
-	/// Construct a filter from a function pointer to a predicate.
-	//
-	pub fn pointer( predicate: fn(&Event) -> bool ) -> Self
-	{
-		Self::Pointer( predicate )
-	}
-
-
 	/// Invoke the predicate
 	//
 	pub(crate) fn call( &mut self, evt: &Event ) -> bool
@@ -109,28 +91,10 @@ mod tests
 
 	#[test]
 	//
-	fn pointer()
-	{
-		let f = Filter::pointer( |b| *b );
-
-		assert_matches!( f, Filter::Pointer(_) );
-	}
-
-	#[test]
-	//
-	fn closure()
-	{
-		let f = Filter::closure( |b| *b );
-
-		assert_matches!( f, Filter::Closure(_) );
-	}
-
-	#[test]
-	//
 	fn debug()
 	{
-		let f = Filter::pointer( |b| *b );
-		let g = Filter::closure( |b| *b );
+		let f = Filter::Pointer(           |b| *b   );
+		let g = Filter::Closure( Box::new( |b| *b ) );
 
 		assert_eq!( "pharos::Filter<bool>::Pointer(_)", &format!( "{:?}", f ) );
 		assert_eq!( "pharos::Filter<bool>::Closure(_)", &format!( "{:?}", g ) );

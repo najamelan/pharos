@@ -10,21 +10,22 @@ package:
   # - merge dev branch into master
   # - create git tag
   #
-  version     : 0.3.0
-  name        : pharos
-  authors     : [ Naja Melan <najamelan@autistici.org> ]
-  edition     : '2018'
-  readme      : README.md
-  license     : Unlicense
-
-  repository  : https://github.com/najamelan/pharos
-  description : Observer pattern which generates a futures 0.3 stream of events
-  categories  : [ asynchronous ]
-  keywords    : [ observer, futures, stream, broadcast, publish_subscribe ]
+  version       : 0.3.1
+  name          : pharos
+  authors       : [ Naja Melan <najamelan@autistici.org> ]
+  edition       : '2018'
+  readme        : README.md
+  license       : Unlicense
+  repository    : https://github.com/najamelan/pharos
+  documentation : https://docs.rs/pharos
+  description   : Observer pattern which generates a futures 0.3 stream of events
+  categories    : [ asynchronous ]
+  keywords      : [ observer, futures, stream, broadcast, publish_subscribe ]
 
   metadata:
-    docs.rs:
-      all-features: true
+    docs:
+      rs:
+        all-features: true
 
 
 features:
@@ -45,7 +46,3 @@ dependencies:
   futures-preview : { version: ^0.3.0-alpha, features: [async-await, nightly] }
   pin-project     : ^0.4.0-beta
 
-
-dev-dependencies:
-
-  assert_matches: ^1

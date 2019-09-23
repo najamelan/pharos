@@ -125,6 +125,9 @@ impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 			None    => true       ,
 		};
 
+
+		#[ allow( clippy::match_bool ) ]
+		//
 		match interested
 		{
 			true  => tx.send( evt.clone() ).await.is_ok(),

@@ -13,9 +13,6 @@ pin-project = "^0.4.0-beta"
 features = ["async-await", "nightly"]
 version = "^0.3.0-alpha"
 
-[dev-dependencies]
-assert_matches = "^1"
-
 [features]
 external_doc = []
 
@@ -23,14 +20,16 @@ external_doc = []
 authors = ["Naja Melan <najamelan@autistici.org>"]
 categories = ["asynchronous"]
 description = "Observer pattern which generates a futures 0.3 stream of events"
+documentation = "https://docs.rs/pharos"
 edition = "2018"
 keywords = ["observer", "futures", "stream", "broadcast", "publish_subscribe"]
 license = "Unlicense"
 name = "pharos"
 readme = "README.md"
 repository = "https://github.com/najamelan/pharos"
-version = "0.3.0"
+version = "0.3.1"
 
 [package.metadata]
-[package.metadata."docs.rs"]
+[package.metadata.docs]
+[package.metadata.docs.rs]
 all-features = true

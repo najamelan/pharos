@@ -59,7 +59,7 @@ use crate :: { Filter, Events };
 /// async fn task()
 /// {
 ///    let mut foo    = Foo { pharos: Pharos::default() };
-///    let mut errors = foo.observe( Filter::pointer( Steps::is_err ).into() );
+///    let mut errors = foo.observe( Filter::Pointer( Steps::is_err ).into() );
 ///
 ///    // will only be notified on errors now
 ///    //
@@ -134,7 +134,7 @@ impl Default for Channel
 /// // Use a filter and defaults for other options.
 /// // Will only receive events if they are bigger than three.
 /// //
-/// pharos.observe( Filter::pointer( |evt| *evt > 3 ).into() );
+/// pharos.observe( Filter::Pointer( |evt| *evt > 3 ).into() );
 ///
 /// // Set both channel and filter. Note you can only set one filter per observable.
 /// //
@@ -206,7 +206,7 @@ impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
    {
       debug_assert!( self.filter.is_none(), "You can only set one filter on ObserveConfig" );
 
-      self.filter = Some( Filter::closure(filter) );
+      self.filter = Some( Filter::Closure( Box::new(filter) ) );
       self
    }
 }

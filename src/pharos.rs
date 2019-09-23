@@ -93,10 +93,9 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 
 					if let Some( mut s ) = opt
 					{
-						match s.notify( evt ).await
+						if s.notify( evt ).await
 						{
-							true  => new = Some( s ),
-							false => {}
+							new = Some( s )
 						}
 					}
 
@@ -135,15 +134,10 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 		{
 			if let Some(observer) = opt.take()
 			{
-				match observer.is_closed()
+				if !observer.is_closed()
 				{
-					true => {}
-
-					false =>
-					{
-						count += 1;
-						*opt = Some( observer );
-					}
+					count += 1;
+					*opt = Some( observer );
 				}
 			}
 		}
