@@ -29,7 +29,7 @@ license = "Unlicense"
 name = "pharos"
 readme = "README.md"
 repository = "https://github.com/najamelan/pharos"
-version = "0.2.2"
+version = "0.3.0"
 
 [package.metadata]
 [package.metadata."docs.rs"]

@@ -1,5 +1,15 @@
 # Pharos Changelog
 
+## 0.3.0 - 2019-09-23
+
+**BREAKING CHANGE**: This is an almost complete rewrite with a much improved API, documentation, ...
+
+- Only have one Observable trait that takes options rather than UboundedObservable.
+- Allow filtering events with a predicate.
+- Many small improvements.
+
+Please have a look at the readme and the API docs for more.
+
 ## 0.2.2 - 2019-08-26
 
 - update to futures 0.3.0-alpha.18
