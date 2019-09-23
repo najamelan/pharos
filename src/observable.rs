@@ -90,7 +90,7 @@ pub enum Channel
    //
    Bounded(usize),
 
-   /// A channel with unbounded capacity. Note that this may lead to unbouded memory consumption if producers
+   /// A channel with unbounded capacity. Note that this may lead to unbounded memory consumption if producers
    /// outpace consumers.
    //
    Unbounded,

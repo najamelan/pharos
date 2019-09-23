@@ -21,7 +21,7 @@ fn basic()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let mut events = isis.observe( ObserveConfig::default() );
 
@@ -44,7 +44,7 @@ fn close_receiver()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let mut events = isis.observe( ObserveConfig::default() );
 
@@ -66,7 +66,7 @@ fn one_receiver_drops()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let mut egypt_evts = isis.observe( ObserveConfig::default() );
 		let mut shine_evts = isis.observe( ObserveConfig::default() );
@@ -98,7 +98,7 @@ fn types()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let mut egypt_evts: Events<IsisEvent> = isis.observe( ObserveConfig::default() );
 		let mut shine_evts: Events<NutEvent > = isis.observe( ObserveConfig::default() );
@@ -123,7 +123,7 @@ fn threads()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let mut egypt_evts = isis.observe( ObserveConfig::default() );
 		let mut shine_evts = isis.observe( ObserveConfig::default() );
@@ -157,7 +157,7 @@ fn alot_of_events()
 {
 	block_on( async move
 	{
-		let mut w = Godess::new();
+		let mut w = Goddess::new();
 
 		let mut events = w.observe( ObserveConfig::default() );
 
@@ -189,7 +189,7 @@ fn filter()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let filter = |evt: &IsisEvent|
 		{
@@ -226,7 +226,7 @@ fn filter_true()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let filter = |_: &IsisEvent| true;
 
@@ -259,7 +259,7 @@ fn filter_false()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let filter = |_: &IsisEvent| false;
 
@@ -287,7 +287,7 @@ fn filter_move()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 		let v: Vec<u8> = Vec::new();
 
 		let filter = move |evt: &IsisEvent|

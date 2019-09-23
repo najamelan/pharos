@@ -13,7 +13,7 @@ fn both()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let mut events: Events<IsisEvent> = isis.observe( Channel::Bounded( 5 ).into() );
 		let mut nuevts: Events<NutEvent>  = isis.observe( Channel::Bounded( 5 ).into() );

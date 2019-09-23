@@ -23,14 +23,14 @@ pub mod import
 use import::*;
 
 
-pub struct Godess
+pub struct Goddess
 {
 	isis: Pharos<IsisEvent>,
 	nut : Pharos<NutEvent >,
 }
 
 
-impl Godess
+impl Goddess
 {
 	pub fn new() -> Self
 	{
@@ -79,7 +79,7 @@ pub struct NutEvent
 }
 
 
-impl Observable<IsisEvent> for Godess
+impl Observable<IsisEvent> for Goddess
 {
 	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Events<IsisEvent>
 	{
@@ -88,7 +88,7 @@ impl Observable<IsisEvent> for Godess
 }
 
 
-impl Observable<NutEvent> for Godess
+impl Observable<NutEvent> for Goddess
 {
 	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Events<NutEvent>
 	{

@@ -10,7 +10,7 @@ package:
   # - merge dev branch into master
   # - create git tag
   #
-  version       : 0.3.1
+  version       : 0.3.2
   name          : pharos
   authors       : [ Naja Melan <najamelan@autistici.org> ]
   edition       : '2018'

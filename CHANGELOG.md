@@ -1,9 +1,14 @@
 # Pharos Changelog
 
+## 0.3.2 - 2019-09-23
+
+- check spelling
+
 ## 0.3.1 - 2019-09-23
 
-**BREAKING CHANGE**: Last minute change of heart. I removed two API methods whose only "merit" was
+- **BREAKING CHANGE**: Last minute change of heart. I removed two API methods whose only "merit" was
 to hide a Box::new from the user.
+- fix docs.rs showing readme
 
 ## 0.3.0 - 2019-09-23 - yanked
 
