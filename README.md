@@ -16,6 +16,7 @@ Minimal rustc version: 1.39.
 ## Table of Contents
 
 - [Security](#security)
+- [Future work](#future-work)
 - [Install](#install)
   - [Upgrade](#upgrade)
   - [Dependencies](#dependencies)
@@ -34,6 +35,11 @@ The main issue with this crate right now is the posibility for the observable to
 TODO: To mitigate these problems effectively, I will add a ring channel where the channel will only buffer a certain amount events and will overwrite the oldest event instead of blocking the sender when the buffer is full.
 
 This crate has: `#![ forbid( unsafe_code ) ]`
+
+
+### Future work
+
+Please check out the [todo](https://github.com/najamelan/pharos/blob/master/TODO.md) for ambitions.
 
 
 ## Install

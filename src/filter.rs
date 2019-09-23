@@ -5,6 +5,38 @@ use crate :: { import::* };
 /// the predicate will just match on the variant, so it would be wasteful to impose boxing in those
 /// cases, hence there is a function pointer variant which does not require boxing. This should
 /// be preferred where possible.
+///
+/// ```
+/// use pharos::*;
+///
+/// let a = 5;
+///
+/// // This closure captures the a variable from it's environment.
+/// // We can still use it as a filter by boxing it with `from_closure`.
+/// //
+/// // Note: it depends on the circumstances, but often enough, we need to
+/// // annotate the type of the event parameter to the predicate.
+/// //
+/// // For this example we use bool as event type for simplicity, but it works
+/// // just the same if that's an enum.
+/// //
+/// let predicate = move |_: &bool| { a; true };
+///
+/// let filter = Filter::<bool>::from_closure( predicate );
+///
+/// // This one does not capture anything, so it can be stored as a function pointer
+/// // without boxing.
+/// //
+/// let predicate = move |_: &bool| { true };
+///
+/// let filter = Filter::<bool>::from_pointer( predicate );
+///
+/// // You can also use actual functions as filters.
+/// //
+/// fn predicate_function( event: &bool ) -> bool { true }
+///
+/// let filter = Filter::<bool>::from_pointer( predicate_function );
+/// ```
 //
 pub enum Filter<Event>
 

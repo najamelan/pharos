@@ -1,6 +1,6 @@
 use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error };
 
-/// A stream of events.
+/// A stream of events. This is returned from [Observable::observe](crate::Observable::observe).
 //
 #[ derive( Debug ) ]
 //

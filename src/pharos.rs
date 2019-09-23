@@ -6,6 +6,9 @@ use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender };
 ///
 /// You can of course create several `Pharos` (I know, historical sacrilege) for (different) types
 /// of events.
+///
+/// Please see the docs for [Observable] for an example. Others can be found in the README and
+/// the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory of the repository.
 //
 pub struct Pharos<Event>  where Event: 'static + Clone + Send
 {
