@@ -55,7 +55,7 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 	/// You can set the initial capacity of the vector of senders, if you know you will a lot of observers
 	/// it will save allocations by setting this to a higher number.
 	///
-	/// For pharos 0.3.0 on x64 linux: std::mem::size_of::<Option<Sender<_>>>() == 56 bytes.
+	/// For pharos 0.3.0 on x64 linux: `std::mem::size_of::<Option<Sender<_>>>() == 56 bytes`.
 	//
 	pub fn new( capacity: usize ) -> Self
 	{
@@ -67,7 +67,8 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 
 
 
-	/// Notify all observers of Event evt.
+	/// Notify all observers of Event `evt`.
+	///
 	/// Currently allocates a new vector for all observers on every run. That will be fixed in future
 	/// versions.
 	//
@@ -167,10 +168,6 @@ impl<Event> Default for Pharos<Event>  where Event: 'static + Clone + Send
 
 impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + Send
 {
-	/// Add an observer to the pharos. This will use a bounded channel of the size of `queue_size`.
-	/// Note that the use of a bounded channel provides backpressure and can slow down the observed
-	/// task.
-	//
 	fn observe( &mut self, options: ObserveConfig<Event> ) -> Events<Event>
 	{
 		let (events, sender) = Events::new( options );

@@ -9,13 +9,14 @@
 
 More seriously, pharos is a small [observer](https://en.wikipedia.org/wiki/Observer_pattern) library that let's you create futures 0.3 streams that observers can listen to.
 
-I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. You can now use all stream combinators, forward it into Sinks and so on.
+I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. So you can use all stream combinators, forward it into Sinks and so on.
 
 Minimal rustc version: 1.39.
 
 ## Table of Contents
 
 - [Security](#security)
+- [Limitations](#limitations)
 - [Future work](#future-work)
 - [Install](#install)
   - [Upgrade](#upgrade)
@@ -36,6 +37,16 @@ TODO: To mitigate these problems effectively, I will add a ring channel where th
 
 This crate has: `#![ forbid( unsafe_code ) ]`
 
+
+### Limitations
+
+- only bounded and unbounded channel as backend (for now)
+- [`Events`] is not clonable right now (would require support from the channels we use as backends, eg. broadcast type channel)
+- performance tweaking still needs to be done
+- pharos requires mut access for most operations. This is not intended to change anytime soon. Both on
+  [notify](Pharos::notify) and [observe](Observable::observe), the two main interfaces, manipulate internal
+  state, and most channels also require mutable access to either read or write. If you need it from non mutable
+  context, use interior mutability primitives like locks or Cells...
 
 ### Future work
 
