@@ -40,9 +40,13 @@ pub use
 	filter       :: { Filter                             } ,
 	observable   :: { Observable, ObserveConfig, Channel } ,
 	events       :: { Events                             } ,
-	error        :: { Error                              } ,
 };
 
+
+pub(crate) use
+{
+	error :: { Error } ,
+};
 
 
 mod import

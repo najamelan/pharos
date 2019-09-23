@@ -7,7 +7,7 @@ use crate::{ import::* };
 //
 #[ derive( Debug ) ]
 //
-pub struct Error
+pub(crate) struct Error
 {
 	pub(crate) inner: Option< Box<dyn ErrorTrait + Send> >,
 	pub(crate) kind : ErrorKind,
@@ -19,9 +19,10 @@ pub struct Error
 //
 #[ derive( Debug ) ]
 //
-pub enum ErrorKind
+pub(crate) enum ErrorKind
 {
-	/// Failed to send on channel, normally means it's closed.
+	/// Failed to send on channel, normally means it's closed. Pharos does not expose these errors
+	/// to the user.
 	//
 	SendError,
 
@@ -77,7 +78,7 @@ impl Error
 {
 	/// Allows matching on the error kind
 	//
-	pub fn kind( &self ) -> &ErrorKind
+	pub(crate) fn _kind( &self ) -> &ErrorKind
 	{
 		&self.kind
 	}
