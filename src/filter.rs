@@ -12,7 +12,7 @@ use crate :: { import::* };
 /// let a = 5;
 ///
 /// // This closure captures the a variable from it's environment.
-/// // We can still use it as a filter by boxing it with `from_closure`.
+/// // We can still use it as a filter by boxing it with `closure`.
 /// //
 /// // Note: it depends on the circumstances, but often enough, we need to
 /// // annotate the type of the event parameter to the predicate.
@@ -22,20 +22,20 @@ use crate :: { import::* };
 /// //
 /// let predicate = move |_: &bool| { a; true };
 ///
-/// let filter = Filter::<bool>::from_closure( predicate );
+/// let filter = Filter::<bool>::closure( predicate );
 ///
 /// // This one does not capture anything, so it can be stored as a function pointer
 /// // without boxing.
 /// //
 /// let predicate = move |_: &bool| { true };
 ///
-/// let filter = Filter::<bool>::from_pointer( predicate );
+/// let filter = Filter::<bool>::pointer( predicate );
 ///
 /// // You can also use actual functions as filters.
 /// //
 /// fn predicate_function( event: &bool ) -> bool { true }
 ///
-/// let filter = Filter::<bool>::from_pointer( predicate_function );
+/// let filter = Filter::<bool>::pointer( predicate_function );
 /// ```
 //
 pub enum Filter<Event>
@@ -57,9 +57,9 @@ impl<Event> Filter<Event>  where Event: Clone + 'static + Send
 {
 	/// Construct a filter from a closure that captures something from it's environment. This will
 	/// be boxed and stored under the [Filter::Closure] variant. To avoid boxing, do not capture
-	/// any variables from the environment and use [Filter::from_pointer].
+	/// any variables from the environment and use [Filter::pointer].
 	//
-	pub fn from_closure<F>( predicate: F ) -> Self where  F: FnMut(&Event) -> bool + Send + 'static
+	pub fn closure<F>( predicate: F ) -> Self where  F: FnMut(&Event) -> bool + Send + 'static
 	{
 		Self::Closure( Box::new( predicate ) )
 	}
@@ -67,7 +67,7 @@ impl<Event> Filter<Event>  where Event: Clone + 'static + Send
 
 	/// Construct a filter from a function pointer to a predicate.
 	//
-	pub fn from_pointer( predicate: fn(&Event) -> bool ) -> Self
+	pub fn pointer( predicate: fn(&Event) -> bool ) -> Self
 	{
 		Self::Pointer( predicate )
 	}
@@ -109,18 +109,18 @@ mod tests
 
 	#[test]
 	//
-	fn from_pointer()
+	fn pointer()
 	{
-		let f = Filter::from_pointer( |b| *b );
+		let f = Filter::pointer( |b| *b );
 
 		assert_matches!( f, Filter::Pointer(_) );
 	}
 
 	#[test]
 	//
-	fn from_closure()
+	fn closure()
 	{
-		let f = Filter::from_closure( |b| *b );
+		let f = Filter::closure( |b| *b );
 
 		assert_matches!( f, Filter::Closure(_) );
 	}
@@ -129,8 +129,8 @@ mod tests
 	//
 	fn debug()
 	{
-		let f = Filter::from_pointer( |b| *b );
-		let g = Filter::from_closure( |b| *b );
+		let f = Filter::pointer( |b| *b );
+		let g = Filter::closure( |b| *b );
 
 		assert_eq!( "pharos::Filter<bool>::Pointer(_)", &format!( "{:?}", f ) );
 		assert_eq!( "pharos::Filter<bool>::Closure(_)", &format!( "{:?}", g ) );

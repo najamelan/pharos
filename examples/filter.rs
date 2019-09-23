@@ -28,7 +28,7 @@ fn main()
 
 	// We will only get close events.
 	//
-	let filter = Filter::from_pointer( |e| e == &NetworkEvent::Closed );
+	let filter = Filter::pointer( |e| e == &NetworkEvent::Closed );
 
 	// By creating the config object through into, other options will be defaults, notably here
 	// this will use unbounded channels.
@@ -37,7 +37,7 @@ fn main()
 
 	// Combine both options.
 	//
-	let filter = Filter::from_pointer( |e| e != &NetworkEvent::Closed );
+	let filter = Filter::pointer( |e| e != &NetworkEvent::Closed );
 	let opts   = ObserveConfig::from( filter ).channel( Channel::Bounded(5) );
 
 	// Get everything but close events over a bounded channel with queue size 5.
