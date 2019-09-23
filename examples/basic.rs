@@ -14,7 +14,7 @@ impl Godess
 {
 	fn new() -> Self
 	{
-		Self { pharos: Pharos::new() }
+		Self { pharos: Pharos::default() }
 	}
 
 	// Send Godess sailing so she can tweet about it!

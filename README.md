@@ -105,7 +105,7 @@ impl Godess
 {
    fn new() -> Self
    {
-      Self { pharos: Pharos::new() }
+      Self { pharos: Pharos::default() }
    }
 
    // Send Godess sailing so she can tweet about it!
@@ -206,7 +206,7 @@ impl Observable<NetworkEvent> for Connection
 
 fn main()
 {
-   let mut conn = Connection{ pharos: Pharos::new() };
+   let mut conn = Connection{ pharos: Pharos::default() };
 
    // We will only get close events.
    //

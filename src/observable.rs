@@ -58,7 +58,7 @@ use crate :: { Filter, Events };
 /// //
 /// async fn task()
 /// {
-///    let mut foo    = Foo { pharos: Pharos::new() };
+///    let mut foo    = Foo { pharos: Pharos::default() };
 ///    let mut errors = foo.observe( Filter::from_pointer( Steps::is_err ).into() );
 ///
 ///    // will only be notified on errors now
@@ -121,7 +121,7 @@ impl Default for Channel
 /// // We choose event type usize for simplicity. You choose whatever type you want here,
 /// // see the bounds on the Event type parameter throughout this library.
 /// //
-/// let mut pharos = Pharos::<usize>::new();
+/// let mut pharos = Pharos::<usize>::default();
 ///
 /// // Use defaults, unbounded channel and no filter.
 /// //

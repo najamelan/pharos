@@ -30,10 +30,18 @@ impl<Event> fmt::Debug for Pharos<Event>  where Event: 'static + Clone + Send
 impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 {
 	/// Create a new Pharos. May it's light guide you to safe harbour.
+	///
+	/// You can set the initial capacity of the vector of senders, if you know you will a lot of observers
+	/// it will save allocations by setting this to a higher number.
+	///
+	/// For pharos 0.3.0 on x64 linux: std::mem::size_of::<Option<Sender<_>>>() == 56 bytes.
 	//
-	pub fn new() -> Self
+	pub fn new( capacity: usize ) -> Self
 	{
-		Self::default()
+		Self
+		{
+			observers: Vec::with_capacity( capacity ),
+		}
 	}
 
 
@@ -86,14 +94,14 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 
 
 
+/// Creates a new pharos, using 10 as the initial capacity of the vector used to store
+/// observers. If this number does really not fit your use case, call [Pharos::new].
+//
 impl<Event> Default for Pharos<Event>  where Event: 'static + Clone + Send
 {
 	fn default() -> Self
 	{
-		Self
-		{
-			observers: Vec::new(),
-		}
+		Self::new( 10 )
 	}
 }
 
@@ -128,7 +136,7 @@ mod tests
 	//
 	fn debug()
 	{
-		let lighthouse = Pharos::<bool>::new();
+		let lighthouse = Pharos::<bool>::default();
 
 		assert_eq!( "pharos::Pharos<bool>", &format!( "{:?}", lighthouse ) );
 	}

@@ -9,5 +9,5 @@
 - scaling? For now we have an ever growing vector of observers
 
   - other data structure than vec? smallvec?
-  - keep a vector of free indexes, pop one on observe, push on removal, to reuse
+  - type that allows concurrent access to &mut for each observer, so we can mutate in place rather than have join_all allocate a new vector on easch notify. Maybe partitions crate? -> has 19 lines of unsafe code, needs review.
   - let users set capacity on creation?

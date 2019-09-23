@@ -24,7 +24,7 @@ impl Observable<NetworkEvent> for Connection
 
 fn main()
 {
-	let mut conn = Connection{ pharos: Pharos::new() };
+	let mut conn = Connection{ pharos: Pharos::default() };
 
 	// We will only get close events.
 	//

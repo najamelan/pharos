@@ -36,8 +36,8 @@ impl Godess
 	{
 		Self
 		{
-			isis: Pharos::new(),
-			nut : Pharos::new(),
+			isis: Pharos::default(),
+			nut : Pharos::default(),
 		}
 	}
 
