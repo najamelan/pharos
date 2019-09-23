@@ -1,6 +1,8 @@
 use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error };
 
 /// A stream of events. This is returned from [Observable::observe](crate::Observable::observe).
+///
+/// For pharos 0.3.0 on x64 linux: std::mem::size_of::<Events<_>>() == 16
 //
 #[ derive( Debug ) ]
 //
@@ -64,6 +66,7 @@ impl<Event> Stream for Events<Event> where Event: Clone + 'static + Send
 
 
 /// The sender of the channel.
+/// For pharos 0.3.0 on x64 linux: std::mem::size_of::<Sender<_>>() == 56
 //
 #[ pin_project ]
 //

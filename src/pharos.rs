@@ -9,6 +9,27 @@ use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender };
 ///
 /// Please see the docs for [Observable] for an example. Others can be found in the README and
 /// the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory of the repository.
+///
+/// ## Implementation.
+///
+/// Currently just holds a `Vec<Option<Sender>>`. It will stop notifying observers if the channel has
+/// returned an error, which usually means it is closed or disconnected. However, we currently don't
+/// compact the vector or use a more performant data structure for the observers.
+///
+/// In observe, we do loop the vector to find a free spot to re-use before pushing.
+///
+/// **Note**: we only detect that observers can be removed when [Pharos::notify] or [Pharos::num_observers]
+/// is being called. Otherwise, we won't find out about disconnected observers and the vector of observers
+/// will not mark deleted observers and thus their slots can not be reused.
+///
+/// Right now, in notify, we use `join_all` from the futures library to notify all observers concurrently.
+/// We take all of our senders out of the options in our vector, operate on them and put them back if
+/// they did not generate an error.
+///
+/// `join_all` will allocate a new vector on every notify from what our concurrent futures return. Ideally
+/// we would use a datastructure which allows &mut access to individual elements, so we can work on them
+/// concurrently in place without reallocating. I am looking into the partitions crate, but that's for
+/// the next release ;).
 //
 pub struct Pharos<Event>  where Event: 'static + Clone + Send
 {
@@ -154,7 +175,25 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 	{
 		let (events, sender) = Events::new( options );
 
-		self.observers.push( Some(sender) );
+		let mut new_observer = Some(sender);
+
+		// Try to find a free slot
+		//
+		for option in &mut self.observers
+		{
+			if option.is_none()
+			{
+				*option = new_observer.take();
+				break;
+			}
+		}
+
+		// no free slots found
+		//
+		if new_observer.is_some()
+		{
+			self.observers.push( new_observer );
+		}
 
 		events
 	}
@@ -229,5 +268,43 @@ mod tests
 
 			assert_eq!( ph.storage_len  (), 2 );
 			assert_eq!( ph.num_observers(), 0 );
+	}
+
+
+	// Make sure we are reusing slots
+	//
+	#[test]
+	//
+	fn reuse()
+	{
+		let mut ph = Pharos::<bool>::default();
+		let _a = ph.observe( ObserveConfig::default() );
+		let  b = ph.observe( ObserveConfig::default() );
+		let _c = ph.observe( ObserveConfig::default() );
+
+			assert_eq!( ph.storage_len  (), 3 );
+			assert_eq!( ph.num_observers(), 3 );
+
+		drop( b );
+
+			// It's important we call num_observers here, to clear the dropped one
+			//
+			assert_eq!( ph.storage_len  (), 3 );
+			assert_eq!( ph.num_observers(), 2 );
+
+			assert!( ph.observers[1].is_none() );
+
+
+		let _d = ph.observe( ObserveConfig::default() );
+
+			assert_eq!( ph.storage_len  (), 3 );
+			assert_eq!( ph.num_observers(), 3 );
+
+		let _e = ph.observe( ObserveConfig::default() );
+
+			// Now we should have pushed again
+			//
+			assert_eq!( ph.storage_len  (), 4 );
+			assert_eq!( ph.num_observers(), 4);
 	}
 }
