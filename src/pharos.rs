@@ -68,31 +68,31 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 
 
 	/// Notify all observers of Event evt.
+	/// Currently allocates a new vector for all observers on every run. That will be fixed in future
+	/// versions.
 	//
 	pub async fn notify( &mut self, evt: &Event )
 	{
 		// Try to send to all channels in parallel, so they can all start processing this event
 		// even if one of them is blocked on a full queue.
 		//
-		// We can not have mutable access in parallel, so we take options out and put them back. This
-		// allocates a new vector every time. If you have a better idea, please open an issue!
+		// We can not have mutable access in parallel, so we take options out and put them back.
 		//
 		// The output of the join is a vec of options with the disconnected observers removed.
 		//
 		let fut = join_all
 		(
-			( 0..self.observers.len() ).map( |i|
+			self.observers.iter_mut().map( |opt|
 			{
-				let opt = self.observers[i].take();
-				let evt = evt.clone();
+				let opt = opt.take();
 
-				async move
+				async
 				{
 					let mut new = None;
 
 					if let Some( mut s ) = opt
 					{
-						match s.notify( &evt ).await
+						match s.notify( evt ).await
 						{
 							true  => new = Some( s ),
 							false => {}
