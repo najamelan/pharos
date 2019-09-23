@@ -10,13 +10,12 @@ package:
   # - merge dev branch into master
   # - create git tag
   #
-  version       : 0.3.0
+  version       : 0.3.1
   name          : pharos
   authors       : [ Naja Melan <najamelan@autistici.org> ]
   edition       : '2018'
   readme        : README.md
   license       : Unlicense
-
   repository    : https://github.com/najamelan/pharos
   documentation : https://docs.rs/pharos
   description   : Observer pattern which generates a futures 0.3 stream of events

@@ -1,6 +1,11 @@
 # Pharos Changelog
 
-## 0.3.0 - 2019-09-23
+## 0.3.1 - 2019-09-23
+
+**BREAKING CHANGE**: Last minute change of heart. I removed two API methods whose only "merit" was
+to hide a Box::new from the user.
+
+## 0.3.0 - 2019-09-23 - yanked
 
 **BREAKING CHANGE**: This is an almost complete rewrite with a much improved API, documentation, ...
 
