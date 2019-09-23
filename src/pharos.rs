@@ -90,6 +90,44 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 		//
 		self.observers = fut.await;
 	}
+
+
+	/// Returns the size of the vector used to store the observers. Useful for debugging and testing if it
+	/// seems to get to big.
+	//
+	pub fn storage_len( &self ) -> usize
+	{
+		self.observers.len()
+	}
+
+
+	/// Returns the number of actual observers that are still listening (have not closed or dropped the Events).
+	/// This will loop and it will verify for each if they are closed, clearing them from the internal storage
+	/// if they are closed. This is similar to what notify does, but without sending an event.
+	//
+	pub fn num_observers( &mut self ) -> usize
+	{
+		let mut count = 0;
+
+		for opt in self.observers.iter_mut()
+		{
+			if let Some(observer) = opt.take()
+			{
+				match observer.is_closed()
+				{
+					true => {}
+
+					false =>
+					{
+						count += 1;
+						*opt = Some( observer );
+					}
+				}
+			}
+		}
+
+		count
+	}
 }
 
 
@@ -139,5 +177,57 @@ mod tests
 		let lighthouse = Pharos::<bool>::default();
 
 		assert_eq!( "pharos::Pharos<bool>", &format!( "{:?}", lighthouse ) );
+	}
+
+	// #[test]
+	// //
+	// fn size_of_sender()
+	// {
+	// 	dbg!( std::mem::size_of::<Option<Sender<bool>>>() );
+	// }
+
+
+	// verify storage_len and num_observers
+	//
+	#[test]
+	//
+	fn new()
+	{
+		let ph = Pharos::<bool>::new( 5 );
+
+		assert_eq!( ph.observers.capacity(), 5 );
+	}
+
+
+	// verify storage_len and num_observers
+	//
+	#[test]
+	//
+	fn storage_len()
+	{
+		let mut ph = Pharos::<bool>::default();
+
+			assert_eq!( ph.storage_len  (), 0 );
+			assert_eq!( ph.num_observers(), 0 );
+
+		let mut a = ph.observe( ObserveConfig::default() );
+
+			assert_eq!( ph.storage_len  (), 1 );
+			assert_eq!( ph.num_observers(), 1 );
+
+		let b = ph.observe( ObserveConfig::default() );
+
+			assert_eq!( ph.storage_len  (), 2 );
+			assert_eq!( ph.num_observers(), 2 );
+
+		a.close();
+
+			assert_eq!( ph.storage_len  (), 2 );
+			assert_eq!( ph.num_observers(), 1 );
+
+		drop( b );
+
+			assert_eq!( ph.storage_len  (), 2 );
+			assert_eq!( ph.num_observers(), 0 );
 	}
 }

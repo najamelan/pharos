@@ -78,31 +78,30 @@ pub(crate) enum Sender<Event> where Event: Clone + 'static + Send
 
 impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 {
+	// Verify whether this observer is still around
+	//
+	pub(crate) fn is_closed( &self ) -> bool
+	{
+		match self
+		{
+			Sender::Bounded  { tx, .. } => tx.is_closed(),
+			Sender::Unbounded{ tx, .. } => tx.is_closed(),
+		}
+	}
+
+
 	// Notify the observer and return a bool indicating whether this observer is still
 	// operational. If an error happens on a channel it usually means that the channel
 	// is closed, in which case we should drop this sender.
 	//
 	pub(crate) async fn notify( &mut self, evt: &Event ) -> bool
 	{
+		if self.is_closed() { return false }
+
 		match self
 		{
-			Sender::Bounded{ tx, filter } =>
-			{
-				match tx.is_closed()
-				{
-					true  => false                                   ,
-					false => Self::notifier( tx, filter, evt ).await ,
-				}
-			}
-
-			Sender::Unbounded{ tx, filter } =>
-			{
-				match tx.is_closed()
-				{
-					true  => false                                   ,
-					false => Self::notifier( tx, filter, evt ).await ,
-				}
-			}
+			Sender::Bounded  { tx, filter } => Self::notifier( tx, filter, evt ).await,
+			Sender::Unbounded{ tx, filter } => Self::notifier( tx, filter, evt ).await,
 		}
 	}
 
