@@ -31,7 +31,7 @@ Minimal rustc version: 1.39.
 
 ## Security
 
-The main issue with this crate right now is the posibility for the observable to outpace the observer. When using bounded channels, there is back pressure, which might allow DDOS attacks if using the pattern on arriving network packets. When using the unbounded channels, it might lead to excessive memory consumption if observers are outpaced.
+The main issue with this crate right now is the possibility for the observable to outpace the observer. When using bounded channels, there is back pressure, which might allow DDOS attacks if using the pattern on arriving network packets. When using the unbounded channels, it might lead to excessive memory consumption if observers are outpaced.
 
 TODO: To mitigate these problems effectively, I will add a ring channel where the channel will only buffer a certain amount events and will overwrite the oldest event instead of blocking the sender when the buffer is full.
 
@@ -40,8 +40,8 @@ This crate has: `#![ forbid( unsafe_code ) ]`
 
 ### Limitations
 
-- only bounded and unbounded channel as backend (for now)
-- [`Events`] is not clonable right now (would require support from the channels we use as backends, eg. broadcast type channel)
+- only bounded and unbounded channel as back-end (for now)
+- [`Events`] is not clonable right now (would require support from the channels we use as back-ends, eg. broadcast type channel)
 - performance tweaking still needs to be done
 - pharos requires mut access for most operations. This is not intended to change anytime soon. Both on
   [notify](Pharos::notify) and [observe](Observable::observe), the two main interfaces, manipulate internal
@@ -79,7 +79,7 @@ Please check out the [changelog](https://github.com/najamelan/pharos/blob/master
 
 ### Dependencies
 
-This crate only has two dependiencies. Cargo will automatically handle it's dependencies for you.
+This crate only has two dependencies. Cargo will automatically handle it's dependencies for you.
 
 ```yaml
 dependencies:
@@ -109,21 +109,21 @@ use
 
 // here we put a pharos object on our struct
 //
-struct Godess { pharos: Pharos<GodessEvent> }
+struct Goddess { pharos: Pharos<GoddessEvent> }
 
 
-impl Godess
+impl Goddess
 {
    fn new() -> Self
    {
       Self { pharos: Pharos::default() }
    }
 
-   // Send Godess sailing so she can tweet about it!
+   // Send Goddess sailing so she can tweet about it!
    //
    pub async fn sail( &mut self )
    {
-      self.pharos.notify( &GodessEvent::Sailing ).await;
+      self.pharos.notify( &GoddessEvent::Sailing ).await;
    }
 }
 
@@ -134,7 +134,7 @@ impl Godess
 //
 #[ derive( Clone, Debug, PartialEq, Copy ) ]
 //
-enum GodessEvent
+enum GoddessEvent
 {
    Sailing
 }
@@ -145,9 +145,9 @@ enum GodessEvent
 // and when you want to be observable over several types of events, you might want to keep
 // pharos in a hashmap over type_id, and a derive would quickly become a mess.
 //
-impl Observable<GodessEvent> for Godess
+impl Observable<GoddessEvent> for Goddess
 {
-   fn observe( &mut self, options: ObserveConfig<GodessEvent>) -> Events<GodessEvent>
+   fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Events<GoddessEvent>
    {
       self.pharos.observe( options )
    }
@@ -158,7 +158,7 @@ fn main()
 {
    let program = async move
    {
-      let mut isis = Godess::new();
+      let mut isis = Goddess::new();
 
       // subscribe, the observe method takes options to let you choose:
       // - channel type (bounded/unbounded)
@@ -178,7 +178,7 @@ fn main()
       //
       drop( isis );
 
-      assert_eq!( GodessEvent::Sailing, evt );
+      assert_eq!( GoddessEvent::Sailing, evt );
       assert_eq!( None, events.next().await );
    };
 
@@ -242,14 +242,14 @@ fn main()
 
 ## API
 
-Api documentation can be found on [docs.rs](https://docs.rs/pharos).
+API documentation can be found on [docs.rs](https://docs.rs/pharos).
 
 
 ## Contributing
 
-This repository accepts contributions. Ideas, questions, feature requests and bug reports can be filed through github issues.
+This repository accepts contributions. Ideas, questions, feature requests and bug reports can be filed through Github issues.
 
-Pull Requests are welcome on github. By commiting pull requests, you accept that your code might be modified and reformatted to fit the project coding style or to improve the implementation. Please discuss what you want to see modified before filing a pull request if you don't want to be doing work that might be rejected.
+Pull Requests are welcome on Github. By committing pull requests, you accept that your code might be modified and reformatted to fit the project coding style or to improve the implementation. Please discuss what you want to see modified before filing a pull request if you don't want to be doing work that might be rejected.
 
 
 ### Code of conduct

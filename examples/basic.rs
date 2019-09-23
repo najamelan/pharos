@@ -7,21 +7,21 @@ use
 
 // here we put a pharos object on our struct
 //
-struct Godess { pharos: Pharos<GodessEvent> }
+struct Goddess { pharos: Pharos<GoddessEvent> }
 
 
-impl Godess
+impl Goddess
 {
 	fn new() -> Self
 	{
 		Self { pharos: Pharos::default() }
 	}
 
-	// Send Godess sailing so she can tweet about it!
+	// Send Goddess sailing so she can tweet about it!
 	//
 	pub async fn sail( &mut self )
 	{
-		self.pharos.notify( &GodessEvent::Sailing ).await;
+		self.pharos.notify( &GoddessEvent::Sailing ).await;
 	}
 }
 
@@ -32,7 +32,7 @@ impl Godess
 //
 #[ derive( Clone, Debug, PartialEq, Copy ) ]
 //
-enum GodessEvent
+enum GoddessEvent
 {
 	Sailing
 }
@@ -43,9 +43,9 @@ enum GodessEvent
 // and when you want to be observable over several types of events, you might want to keep
 // pharos in a hashmap over type_id, and a derive would quickly become a mess.
 //
-impl Observable<GodessEvent> for Godess
+impl Observable<GoddessEvent> for Goddess
 {
-	fn observe( &mut self, options: ObserveConfig<GodessEvent>) -> Events<GodessEvent>
+	fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Events<GoddessEvent>
 	{
 		self.pharos.observe( options )
 	}
@@ -56,7 +56,7 @@ fn main()
 {
 	let program = async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		// subscribe, the observe method takes options to let you choose:
 		// - channel type (bounded/unbounded)
@@ -76,7 +76,7 @@ fn main()
 		//
 		drop( isis );
 
-		assert_eq!( GodessEvent::Sailing, evt );
+		assert_eq!( GoddessEvent::Sailing, evt );
 		assert_eq!( None, events.next().await );
 	};
 

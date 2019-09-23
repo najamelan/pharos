@@ -27,7 +27,7 @@ use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender };
 /// they did not generate an error.
 ///
 /// `join_all` will allocate a new vector on every notify from what our concurrent futures return. Ideally
-/// we would use a datastructure which allows &mut access to individual elements, so we can work on them
+/// we would use a data structure which allows &mut access to individual elements, so we can work on them
 /// concurrently in place without reallocating. I am looking into the partitions crate, but that's for
 /// the next release ;).
 //
@@ -50,12 +50,12 @@ impl<Event> fmt::Debug for Pharos<Event>  where Event: 'static + Clone + Send
 
 impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 {
-	/// Create a new Pharos. May it's light guide you to safe harbour.
+	/// Create a new Pharos. May it's light guide you to safe harbor.
 	///
 	/// You can set the initial capacity of the vector of senders, if you know you will a lot of observers
 	/// it will save allocations by setting this to a higher number.
 	///
-	/// For pharos 0.3.0 on x64 linux: `std::mem::size_of::<Option<Sender<_>>>() == 56 bytes`.
+	/// For pharos 0.3.0 on x64 Linux: `std::mem::size_of::<Option<Sender<_>>>() == 56 bytes`.
 	//
 	pub fn new( capacity: usize ) -> Self
 	{

@@ -21,7 +21,7 @@ fn basic()
 {
 	block_on( async move
 	{
-		let mut isis   = Godess::new();
+		let mut isis   = Goddess::new();
 		let mut events = isis.observe( Channel::Bounded( 5 ).into() );
 
 		isis.sail().await;
@@ -44,7 +44,7 @@ fn close_receiver()
 {
 	block_on( async move
 	{
-		let mut isis   = Godess::new();
+		let mut isis   = Goddess::new();
 		let mut events = isis.observe( Channel::Bounded( 5 ).into() );
 
 		isis.sail().await;
@@ -65,7 +65,7 @@ fn one_receiver_drops()
 {
 	block_on( async move
 	{
-		let mut isis       = Godess::new();
+		let mut isis       = Goddess::new();
 		let mut egypt_evts = isis.observe( Channel::Bounded( 1 ).into() );
 		let mut shine_evts = isis.observe( Channel::Bounded( 2 ).into() );
 
@@ -94,7 +94,7 @@ fn types()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		// Note that because of the asserts below type inference works here and we don't have to
 		// put type annotation, but I do find it quite obscure and better to be explicit.
@@ -123,7 +123,7 @@ fn threads()
 {
 	block_on( async move
 	{
-		let mut isis       = Godess::new();
+		let mut isis       = Goddess::new();
 		let mut egypt_evts = isis.observe( Channel::Bounded( 5 ).into() );
 		let mut shine_evts = isis.observe( Channel::Bounded( 5 ).into() );
 
@@ -165,7 +165,7 @@ fn block_sender()
 	let mut pool  = LocalPool::new();
 	let mut exec  = pool.spawner();
 
-	let mut isis = Godess::new();
+	let mut isis = Goddess::new();
 	let mut events: Receiver<IsisEvent> = isis.observe( 0 );
 
 	let sender = async move
@@ -202,7 +202,7 @@ fn filter()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let filter = |evt: &IsisEvent|
 		{
@@ -242,7 +242,7 @@ fn filter_true()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let filter = |_: &IsisEvent| true;
 
@@ -278,7 +278,7 @@ fn filter_false()
 {
 	block_on( async move
 	{
-		let mut isis = Godess::new();
+		let mut isis = Goddess::new();
 
 		let filter = |_: &IsisEvent| false;
 
@@ -309,7 +309,7 @@ fn filter_move()
 {
 	block_on( async move
 	{
-		let mut isis   = Godess::new();
+		let mut isis   = Goddess::new();
 		let v: Vec<u8> = Vec::new();
 
 		let filter = move |evt: &IsisEvent|
