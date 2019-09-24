@@ -264,15 +264,7 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 		{
 			if let Some( ref mut obs ) = opt
 			{
-				match Pin::new( obs ).poll_flush( cx )
-				{
-					Poll::Pending       => {} ,
-					Poll::Ready(Ok())   => {} ,
-
-					Poll::Ready(Err(_)) =>
-					{
-					}
-				}
+				Pin::new( obs ).poll_flush( cx );
 			}
 		}
 
