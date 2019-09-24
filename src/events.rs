@@ -68,12 +68,10 @@ impl<Event> Stream for Events<Event> where Event: Clone + 'static + Send
 /// The sender of the channel.
 /// For pharos 0.3.0 on x64 Linux: `std::mem::size_of::<Sender<_>>() == 56`
 //
-#[ pin_project ]
-//
 pub(crate) enum Sender<Event> where Event: Clone + 'static + Send
 {
-	Bounded  { #[pin] tx: FutSender<Event>         , filter: Option<Filter<Event>> } ,
-	Unbounded{ #[pin] tx: FutUnboundedSender<Event>, filter: Option<Filter<Event>> } ,
+	Bounded  { tx: FutSender<Event>         , filter: Option<Filter<Event>> } ,
+	Unbounded{ tx: FutUnboundedSender<Event>, filter: Option<Filter<Event>> } ,
 }
 
 
@@ -144,12 +142,10 @@ impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 
 /// The receiver of the channel.
 //
-#[ pin_project ]
-//
 enum Receiver<Event> where Event: Clone + 'static + Send
 {
-	Bounded  { #[pin] rx: FutReceiver<Event>          } ,
-	Unbounded{ #[pin] rx: FutUnboundedReceiver<Event> } ,
+	Bounded  { rx: FutReceiver<Event>          } ,
+	Unbounded{ rx: FutUnboundedReceiver<Event> } ,
 }
 
 
@@ -186,16 +182,12 @@ impl<Event> Stream for Receiver<Event> where Event: Clone + 'static + Send
 {
 	type Item = Event;
 
-	#[ project ]
-	//
 	fn poll_next( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll< Option<Self::Item> >
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Receiver::Bounded  { rx } => rx.poll_next( cx ),
-			Receiver::Unbounded{ rx } => rx.poll_next( cx ),
+			Receiver::Bounded  { rx } => Pin::new( rx ).poll_next( cx ),
+			Receiver::Unbounded{ rx } => Pin::new( rx ).poll_next( cx ),
 		}
 	}
 }
@@ -206,57 +198,43 @@ impl<Event> Sink<Event> for Sender<Event> where Event: Clone + 'static + Send
 {
 	type Error = Error;
 
-	#[ project ]
-	//
+
 	fn poll_ready( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.poll_ready( cx ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.poll_ready( cx ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } => Pin::new( tx ).poll_ready( cx ).map_err( Into::into ),
+			Sender::Unbounded{ tx, .. } => Pin::new( tx ).poll_ready( cx ).map_err( Into::into ),
 		}
 	}
 
-	#[ project ]
-	//
+
 	fn start_send( self: Pin<&mut Self>, item: Event ) -> Result<(), Self::Error>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.start_send( item ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.start_send( item ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } => Pin::new( tx ).start_send( item ).map_err( Into::into ),
+			Sender::Unbounded{ tx, .. } => Pin::new( tx ).start_send( item ).map_err( Into::into ),
 		}
 	}
 
-	/// This will do a send under the hood, so the same errors as from start_send can occur here.
-	//
-	#[ project ]
-	//
+
 	fn poll_flush( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.poll_flush( cx ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.poll_flush( cx ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } => Pin::new( tx ).poll_flush( cx ).map_err( Into::into ),
+			Sender::Unbounded{ tx, .. } => Pin::new( tx ).poll_flush( cx ).map_err( Into::into ),
 		}
 	}
 
-	#[ project ]
-	//
+
 	fn poll_close( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.poll_close( cx ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.poll_close( cx ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } => Pin::new( tx ).poll_close( cx ).map_err( Into::into ),
+			Sender::Unbounded{ tx, .. } => Pin::new( tx ).poll_close( cx ).map_err( Into::into ),
 		}
 	}
 }

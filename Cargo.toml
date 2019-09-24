@@ -7,8 +7,6 @@ status = "actively-developed"
 repository = "najamelan/pharos"
 
 [dependencies]
-pin-project = "^0.4.0-beta"
-
 [dependencies.futures-preview]
 features = ["async-await", "nightly"]
 version = "^0.3.0-alpha"

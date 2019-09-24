@@ -55,7 +55,6 @@ mod import
 	{
 		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name } ,
 		std            :: { task::{ Poll, Context }, pin::Pin                           } ,
-		pin_project    :: { project, pin_project                                        } ,
 
 		futures ::
 		{
