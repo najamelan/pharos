@@ -66,8 +66,7 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 	/// You can set the initial capacity of the vector of senders, if you know you will a lot of observers
 	/// it will save allocations by setting this to a higher number.
 	///
-	/// TODO: update to pharos 0.4.0
-	/// For pharos 0.3.0 on x64 Linux: `std::mem::size_of::<Option<Sender<_>>>() == 56 bytes`.
+	/// For pharos 0.4.0 on x64 Linux: `std::mem::size_of::<Option<Sender<_>>>() == 56 bytes`.
 	//
 	pub fn new( capacity: usize ) -> Self
 	{
@@ -345,6 +344,7 @@ mod tests
 	// fn size_of_sender()
 	// {
 	// 	dbg!( std::mem::size_of::<Option<Sender<bool>>>() );
+	// 	dbg!( std::mem::size_of::<Events<bool>>() );
 	// }
 
 
