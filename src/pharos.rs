@@ -266,14 +266,11 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 			{
 				match Pin::new( obs ).poll_flush( cx )
 				{
-					Poll::Pending       => pending = true ,
-					Poll::Ready(Ok())   => continue       ,
+					Poll::Pending       => {} ,
+					Poll::Ready(Ok())   => {} ,
 
 					Poll::Ready(Err(_)) =>
 					{
-						this.free_slots.push( i );
-
-						*opt = None;
 					}
 				}
 			}
