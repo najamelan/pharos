@@ -255,22 +255,28 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 		}
 
 
-		let this = self.get_mut();
+		let mut pending = false;
+		let     this    = self.get_mut();
 
 		for (i, opt) in this.observers.iter_mut().enumerate()
 		{
 			if let Some( ref mut obs ) = opt
 			{
-				let res = ready!( Pin::new( obs ).poll_flush( cx ) );
-
-				if res.is_err()
+				match Pin::new( obs ).poll_flush( cx )
 				{
-					this.free_slots.push( i );
+					Poll::Pending       => pending = true ,
+					Poll::Ready(Ok())   => continue       ,
 
-					*opt = None;
+					Poll::Ready(Err(_)) =>
+					{
+						this.free_slots.push( i );
+
+						*opt = None;
+					}
 				}
 			}
 		}
+
 
 		Ok(()).into()
 	}
