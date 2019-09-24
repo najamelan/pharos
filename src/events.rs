@@ -91,49 +91,24 @@ impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 	}
 
 
-	// Notify the observer and return a bool indicating whether this observer is still
-	// operational. If an error happens on a channel it usually means that the channel
-	// is closed, in which case we should drop this sender.
+	/// Check whether this sender is interested in this event
 	//
-	pub(crate) async fn notify( &mut self, evt: &Event ) -> bool
+	pub(crate) fn filter( &mut self, evt: &Event ) -> bool
 	{
-		if self.is_closed() { return false }
-
 		match self
 		{
-			Sender::Bounded  { tx, filter } => Self::notifier( tx, filter, evt ).await,
-			Sender::Unbounded{ tx, filter } => Self::notifier( tx, filter, evt ).await,
+			Sender::Bounded  { filter, .. } => Self::filter_inner( filter, evt ),
+			Sender::Unbounded{ filter, .. } => Self::filter_inner( filter, evt ),
 		}
 	}
 
 
-	async fn notifier
-	(
-		mut tx: impl Sink<Event> + Unpin   ,
-		filter: &mut Option<Filter<Event>> ,
-		evt   : &Event                     ,
-	)
-
-		-> bool
-
+	fn filter_inner( filter: &mut Option<Filter<Event>>, evt: &Event ) -> bool
 	{
-		let interested = match filter
+		match filter
 		{
 			Some(f) => f.call(evt),
 			None    => true       ,
-		};
-
-
-		#[ allow( clippy::match_bool ) ]
-		//
-		match interested
-		{
-			true  => tx.send( evt.clone() ).await.is_ok(),
-
-			// since we don't try to send, we know nothing about whether they are still
-			// observing, so assume they do.
-			//
-			false => true,
 		}
 	}
 }

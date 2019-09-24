@@ -9,7 +9,8 @@
 
 More seriously, pharos is a small [observer](https://en.wikipedia.org/wiki/Observer_pattern) library that let's you create futures 0.3 streams that observers can listen to.
 
-I created it to leverage interoperability we can create by using async Streams and Sinks from the futures library. So you can use all stream combinators, forward it into Sinks and so on.
+I created it to leverage interoperability we can create by using async [Stream](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.18/futures_core/stream/trait.Stream.html) and [Sink](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.18/futures/sink/trait.Sink.html
+) from the futures library. So you can use all stream combinators, forward it into Sinks and so on.
 
 Minimal rustc version: 1.39.
 
@@ -44,8 +45,8 @@ This crate has: `#![ forbid( unsafe_code ) ]`
 - [`Events`] is not clonable right now (would require support from the channels we use as back-ends, eg. broadcast type channel)
 - performance tweaking still needs to be done
 - pharos requires mut access for most operations. This is not intended to change anytime soon. Both on
-  [notify](Pharos::notify) and [observe](Observable::observe), the two main interfaces, manipulate internal
-  state, and most channels also require mutable access to either read or write. If you need it from non mutable
+  [send](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.18/futures_util/sink/trait.SinkExt.html#method.send) and [observe](Observable::observe), the two main interfaces, manipulate internal
+  state, and most channels also require mutable access to either read or write. If you need it from immutable
   context, use interior mutability primitives like locks or Cells...
 
 ### Future work
@@ -79,18 +80,17 @@ Please check out the [changelog](https://github.com/najamelan/pharos/blob/master
 
 ### Dependencies
 
-This crate only has two dependencies. Cargo will automatically handle it's dependencies for you.
+This crate only has one dependencies. Cargo will automatically handle it's dependencies for you.
 
 ```yaml
 dependencies:
 
   futures-preview : { version: ^0.3.0-alpha, features: [async-await, nightly] }
-  pin-project     : ^0.4.0-beta
 ```
 
 ## Usage
 
-pharos only works for async code, as the notify method is asynchronous. Observers must consume the messages
+`pharos` only works for async code, as the notify method is asynchronous. Observers must consume the messages
 fast enough, otherwise they will slow down the observable (bounded channel) or cause memory leak (unbounded channel).
 
 Whenever observers want to unsubscribe, they can just drop the stream or call `close` on it. If you are an observable and you want to notify observers that no more messages will follow, just drop the pharos object. Failing that, create an event type that signifies EOF and send that to observers.
@@ -102,8 +102,8 @@ Examples can be found in the [examples](https://github.com/najamelan/pharos/tree
 ```rust
 use
 {
-   pharos  :: { *                             } ,
-   futures :: { executor::block_on, StreamExt } ,
+   pharos  :: { *                                      } ,
+   futures :: { executor::block_on, StreamExt, SinkExt } ,
 };
 
 
@@ -123,7 +123,10 @@ impl Goddess
    //
    pub async fn sail( &mut self )
    {
-      self.pharos.notify( &GoddessEvent::Sailing ).await;
+      // It's infallible. Observers that error will be dropped, since the only kind of errors on
+      // channels are when the channel is closed.
+      //
+      self.pharos.send( GoddessEvent::Sailing ).await.expect( "notify observers" );
    }
 }
 
@@ -147,7 +150,9 @@ enum GoddessEvent
 //
 impl Observable<GoddessEvent> for Goddess
 {
-   fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Events<GoddessEvent>
+   type Error = pharos::Error;
+
+   fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Result< Events<GoddessEvent>, Self::Error >
    {
       self.pharos.observe( options )
    }
@@ -164,7 +169,7 @@ fn main()
       // - channel type (bounded/unbounded)
       // - a predicate to filter events
       //
-      let mut events = isis.observe( Channel::Bounded( 3 ).into() );
+      let mut events = isis.observe( Channel::Bounded( 3 ).into() ).expect( "observe" );
 
       // trigger an event
       //
@@ -209,7 +214,9 @@ struct Connection { pharos: Pharos<NetworkEvent> }
 
 impl Observable<NetworkEvent> for Connection
 {
-   fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Events<NetworkEvent>
+   type Error = pharos::Error;
+
+   fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Result< Events<NetworkEvent>, Self::Error >
    {
        self.pharos.observe( options )
    }
@@ -226,7 +233,7 @@ fn main()
    // By creating the config object through into, other options will be defaults, notably here
    // this will use unbounded channels.
    //
-   let observer = conn.observe( filter.into() );
+   let observer = conn.observe( filter.into() ).expect( "observe" );
 
    // Combine both options.
    //

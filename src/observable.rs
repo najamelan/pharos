@@ -1,4 +1,4 @@
-use crate :: { Filter, Events };
+use crate :: { import::*, Filter, Events };
 
 /// Indicate that a type is observable. You can call [`observe`](Observable::observe) to get a
 /// stream of events.
@@ -28,6 +28,8 @@ use crate :: { Filter, Events };
 ///
 /// impl Steps
 /// {
+///    // We can use this as a predicate to filter events.
+///    //
 ///    fn is_err( &self ) -> bool
 ///    {
 ///       match self
@@ -39,15 +41,17 @@ use crate :: { Filter, Events };
 /// }
 ///
 ///
-/// // The object we want to be observable
+/// // The object we want to be observable.
 /// //
 /// struct Foo { pharos: Pharos<Steps> };
 ///
 /// impl Observable<Steps> for Foo
 /// {
+///    type Error = pharos::Error;
+///
 ///    // Pharos implements observable, so we just forward the call.
 ///    //
-///    fn observe( &mut self, options: ObserveConfig<Steps> ) -> Events<Steps>
+///    fn observe( &mut self, options: ObserveConfig<Steps> ) -> Result< Events<Steps>, Self::Error >
 ///    {
 ///       self.pharos.observe( options )
 ///    }
@@ -59,9 +63,9 @@ use crate :: { Filter, Events };
 /// async fn task()
 /// {
 ///    let mut foo    = Foo { pharos: Pharos::default() };
-///    let mut errors = foo.observe( Filter::Pointer( Steps::is_err ).into() );
+///    let mut errors = foo.observe( Filter::Pointer( Steps::is_err ).into() ).expect( "observe" );
 ///
-///    // will only be notified on errors now
+///    // will only be notified on errors thanks to the filter.
 ///    //
 ///    let next_error = errors.next().await;
 /// }
@@ -71,10 +75,20 @@ pub trait Observable<Event>
 
    where Event: Clone + 'static + Send ,
 {
+   /// The error type that is returned if observing is not possible. [Pharos](crate::Pharos) implements Sink
+   /// which has a close method, so observing will no longer be possible after close is called.
+   ///
+   /// Other than that, you might want to have moments in your objects lifetime when you don't want to take
+   /// any more observers. Returning a result from [observe](Observable::observe) enables that.
+   ///
+   /// You can of course map the error of pharos to your own error type.
+   //
+   type Error: ErrorTrait;
+
    /// Add an observer to the observable. Options can be in order to choose channel type and
    /// to filter events with a predicate.
    //
-   fn observe( &mut self, options: ObserveConfig<Event> ) -> Events<Event>;
+   fn observe( &mut self, options: ObserveConfig<Event> ) -> Result<Events<Event>, Self::Error>;
 }
 
 

@@ -1,4 +1,4 @@
-use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender };
+use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender, Error, ErrorKind };
 
 
 /// The Pharos lighthouse. When you implement Observable on your type, you can forward
@@ -13,27 +13,38 @@ use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender };
 /// ## Implementation.
 ///
 /// Currently just holds a `Vec<Option<Sender>>`. It will stop notifying observers if the channel has
-/// returned an error, which usually means it is closed or disconnected. However, we currently don't
-/// compact the vector or use a more performant data structure for the observers.
+/// returned an error, which means it is closed or disconnected. However, we currently don't
+/// compact the vector. Slots are reused for new observers, but the vector never shrinks.
 ///
 /// In observe, we do loop the vector to find a free spot to re-use before pushing.
 ///
-/// **Note**: we only detect that observers can be removed when [Pharos::notify] or [Pharos::num_observers]
+/// **Note**: we only detect that observers can be removed when [futures::SinkExt::send] or [Pharos::num_observers]
 /// is being called. Otherwise, we won't find out about disconnected observers and the vector of observers
 /// will not mark deleted observers and thus their slots can not be reused.
 ///
-/// Right now, in notify, we use `join_all` from the futures library to notify all observers concurrently.
-/// We take all of our senders out of the options in our vector, operate on them and put them back if
-/// they did not generate an error.
+/// The [Sink] impl is not very optimized for the moment. It just loops over all observers in each poll method
+/// so it will call `poll_ready` and `poll_flush` again for observers that already returned `Poll::Ready(Ok(()))`.
 ///
-/// `join_all` will allocate a new vector on every notify from what our concurrent futures return. Ideally
-/// we would use a data structure which allows &mut access to individual elements, so we can work on them
-/// concurrently in place without reallocating. I am looking into the partitions crate, but that's for
-/// the next release ;).
+/// TODO: I will do some benchmarking and see if this can be improved, eg. by keeping a state which tracks which
+/// observers we still have to poll.
 //
 pub struct Pharos<Event>  where Event: 'static + Clone + Send
 {
-	observers: Vec<Option< Sender<Event> >>,
+	// Observers never get moved. Their index stays stable, so that when we free a slot,
+	// we can store that in `free_slots`.
+	//
+	observers : Vec<Option< Sender<Event> >>,
+	free_slots: Vec<usize>                  ,
+	state     : State                       ,
+}
+
+
+#[ derive( Clone, Debug, PartialEq ) ]
+//
+enum State
+{
+	Ready,
+	Closed,
 }
 
 
@@ -55,61 +66,17 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 	/// You can set the initial capacity of the vector of senders, if you know you will a lot of observers
 	/// it will save allocations by setting this to a higher number.
 	///
+	/// TODO: update to pharos 0.4.0
 	/// For pharos 0.3.0 on x64 Linux: `std::mem::size_of::<Option<Sender<_>>>() == 56 bytes`.
 	//
 	pub fn new( capacity: usize ) -> Self
 	{
 		Self
 		{
-			observers: Vec::with_capacity( capacity ),
+			observers : Vec::with_capacity( capacity ),
+			free_slots: Vec::with_capacity( capacity ),
+			state     : State::Ready                  ,
 		}
-	}
-
-
-
-	/// Notify all observers of Event `evt`.
-	///
-	/// Currently allocates a new vector for all observers on every run. That will be fixed in future
-	/// versions.
-	//
-	pub async fn notify( &mut self, evt: &Event )
-	{
-		// Try to send to all channels in parallel, so they can all start processing this event
-		// even if one of them is blocked on a full queue.
-		//
-		// We can not have mutable access in parallel, so we take options out and put them back.
-		//
-		// The output of the join is a vec of options with the disconnected observers removed.
-		//
-		let fut = join_all
-		(
-			self.observers.iter_mut().map( |opt|
-			{
-				let opt = opt.take();
-
-				async
-				{
-					let mut new = None;
-
-					if let Some( mut s ) = opt
-					{
-						if s.notify( evt ).await
-						{
-							new = Some( s )
-						}
-					}
-
-					new
-				}
-
-			})
-		);
-
-
-		// Put back the observers that we "borrowed"
-		// TODO: compact the vector from time to time?
-		//
-		self.observers = fut.await;
 	}
 
 
@@ -130,14 +97,20 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 	{
 		let mut count = 0;
 
-		for opt in self.observers.iter_mut()
+
+		for (i, opt) in self.observers.iter_mut().enumerate()
 		{
-			if let Some(observer) = opt.take()
+			if let Some(observer) = opt
 			{
 				if !observer.is_closed()
 				{
 					count += 1;
-					*opt = Some( observer );
+				}
+
+				else
+				{
+					self.free_slots.push( i );
+					*opt = None
 				}
 			}
 		}
@@ -162,31 +135,182 @@ impl<Event> Default for Pharos<Event>  where Event: 'static + Clone + Send
 
 impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + Send
 {
-	fn observe( &mut self, options: ObserveConfig<Event> ) -> Events<Event>
+	type Error = Error;
+
+	/// Will try to re-use slots in the vector from disconnected observers.
+	//
+	fn observe( &mut self, options: ObserveConfig<Event> ) -> Result< Events<Event>, Self::Error >
 	{
+		if self.state == State::Closed
+		{
+			return Err( ErrorKind::Closed.into() );
+		}
+
+
 		let (events, sender) = Events::new( options );
 
-		let mut new_observer = Some(sender);
 
-		// Try to find a free slot
+		// Try to reuse a free slot
 		//
-		for option in &mut self.observers
+		if let Some( i ) = self.free_slots.pop()
 		{
-			if option.is_none()
+			self.observers[i] = Some( sender );
+		}
+
+		else
+		{
+			self.observers.push( Some( sender ) );
+		}
+
+		Ok( events )
+	}
+}
+
+
+
+impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
+{
+	type Error = Error;
+
+
+	fn poll_ready( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
+	{
+
+		if self.state == State::Closed
+		{
+			return Err( ErrorKind::Closed.into() ).into();
+		}
+
+
+		for obs in self.get_mut().observers.iter_mut()
+		{
+			if let Some( ref mut o ) = obs
 			{
-				*option = new_observer.take();
-				break;
+				let res = ready!( Pin::new( o ).poll_ready( cx ) );
+
+				if res.is_err()
+				{
+					*obs = None;
+				}
 			}
 		}
 
-		// no free slots found
-		//
-		if new_observer.is_some()
+		Ok(()).into()
+	}
+
+
+	fn start_send( self: Pin<&mut Self>, evt: Event ) -> Result<(), Self::Error>
+	{
+
+		if self.state == State::Closed
 		{
-			self.observers.push( new_observer );
+			return Err( ErrorKind::Closed.into() );
 		}
 
-		events
+
+		let this = self.get_mut();
+
+		for (i, opt) in this.observers.iter_mut().enumerate()
+		{
+			// if this spot in the vector has a sender
+			//
+			if let Some( obs ) = opt
+			{
+				// if it's closed, let's remove it.
+				//
+				if obs.is_closed()
+				{
+					this.free_slots.push( i );
+
+					*opt = None;
+				}
+
+				// else if it is interested in this event
+				//
+				else if obs.filter( &evt )
+				{
+					// if sending fails, remove it
+					//
+					if Pin::new( obs ).start_send( evt.clone() ).is_err()
+					{
+						this.free_slots.push( i );
+
+						*opt = None;
+					}
+				}
+			}
+		}
+
+		Ok(()).into()
+	}
+
+
+
+	fn poll_flush( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
+	{
+
+		if self.state == State::Closed
+		{
+			return Err( ErrorKind::Closed.into() ).into();
+		}
+
+
+		let this = self.get_mut();
+
+		for (i, opt) in this.observers.iter_mut().enumerate()
+		{
+			if let Some( ref mut obs ) = opt
+			{
+				let res = ready!( Pin::new( obs ).poll_flush( cx ) );
+
+				if res.is_err()
+				{
+					this.free_slots.push( i );
+
+					*opt = None;
+				}
+			}
+		}
+
+		Ok(()).into()
+	}
+
+
+
+	/// Will close and drop all observers. The pharos object will remain operational however.
+	/// The main annoyance would be that we'd have to make
+	//
+	fn poll_close( mut self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
+	{
+		if self.state == State::Closed
+		{
+			return Ok(()).into();
+		}
+
+		else
+		{
+			self.state = State::Closed;
+		}
+
+
+		let this = self.get_mut();
+
+		for (i, opt) in this.observers.iter_mut().enumerate()
+		{
+			if let Some( ref mut obs ) = opt
+			{
+				let res = ready!( Pin::new( obs ).poll_close( cx ) );
+
+				if res.is_err()
+				{
+					this.free_slots.push( i );
+
+					*opt = None;
+				}
+			}
+		}
+
+		Ok(()).into()
 	}
 }
 
@@ -199,6 +323,7 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 mod tests
 {
 	use super::*;
+	use futures::SinkExt;
 
 	#[test]
 	//
@@ -237,28 +362,33 @@ mod tests
 	{
 		let mut ph = Pharos::<bool>::default();
 
-			assert_eq!( ph.storage_len  (), 0 );
-			assert_eq!( ph.num_observers(), 0 );
+			assert_eq!( ph.storage_len   (), 0 );
+			assert_eq!( ph.num_observers (), 0 );
+			assert_eq!( ph.free_slots.len(), 0 );
 
-		let mut a = ph.observe( ObserveConfig::default() );
+		let mut a = ph.observe( ObserveConfig::default() ).expect( "observe" );
 
-			assert_eq!( ph.storage_len  (), 1 );
-			assert_eq!( ph.num_observers(), 1 );
+			assert_eq!( ph.storage_len   (), 1 );
+			assert_eq!( ph.num_observers (), 1 );
+			assert_eq!( ph.free_slots.len(), 0 );
 
-		let b = ph.observe( ObserveConfig::default() );
+		let b = ph.observe( ObserveConfig::default() ).expect( "observe" );
 
-			assert_eq!( ph.storage_len  (), 2 );
-			assert_eq!( ph.num_observers(), 2 );
+			assert_eq!( ph.storage_len   (), 2 );
+			assert_eq!( ph.num_observers (), 2 );
+			assert_eq!( ph.free_slots.len(), 0 );
 
 		a.close();
 
-			assert_eq!( ph.storage_len  (), 2 );
-			assert_eq!( ph.num_observers(), 1 );
+			assert_eq!( ph.storage_len  () , 2    );
+			assert_eq!( ph.num_observers() , 1    );
+			assert_eq!( &ph.free_slots     , &[0] );
 
 		drop( b );
 
-			assert_eq!( ph.storage_len  (), 2 );
-			assert_eq!( ph.num_observers(), 0 );
+			assert_eq!( ph.storage_len  (), 2       );
+			assert_eq!( ph.num_observers(), 0       );
+			assert_eq!( &ph.free_slots    , &[0, 1] );
 	}
 
 
@@ -284,18 +414,35 @@ mod tests
 			assert_eq!( ph.num_observers(), 2 );
 
 			assert!( ph.observers[1].is_none() );
+			assert_eq!( &ph.free_slots, &[1] );
 
 
 		let _d = ph.observe( ObserveConfig::default() );
 
-			assert_eq!( ph.storage_len  (), 3 );
-			assert_eq!( ph.num_observers(), 3 );
+			assert_eq!( ph.storage_len   (), 3 );
+			assert_eq!( ph.num_observers (), 3 );
+			assert_eq!( ph.free_slots.len(), 0 );
 
 		let _e = ph.observe( ObserveConfig::default() );
 
 			// Now we should have pushed again
 			//
-			assert_eq!( ph.storage_len  (), 4 );
-			assert_eq!( ph.num_observers(), 4);
+			assert_eq!( ph.storage_len   (), 4 );
+			assert_eq!( ph.num_observers (), 4);
+			assert_eq!( ph.free_slots.len(), 0 );
+	}
+
+
+	// verify we can no longer observer after calling close
+	//
+	#[test]
+	//
+	fn observe_after_close()
+	{
+		let mut ph = Pharos::<bool>::default();
+
+		futures::executor::block_on( ph.close() ).expect( "close" );
+
+		assert!( ph.observe( ObserveConfig::default() ).is_err() );
 	}
 }

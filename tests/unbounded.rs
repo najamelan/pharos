@@ -23,7 +23,7 @@ fn basic()
 	{
 		let mut isis = Goddess::new();
 
-		let mut events = isis.observe( ObserveConfig::default() );
+		let mut events = isis.observe( ObserveConfig::default() ).expect( "observe" );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -46,7 +46,7 @@ fn close_receiver()
 	{
 		let mut isis = Goddess::new();
 
-		let mut events = isis.observe( ObserveConfig::default() );
+		let mut events = isis.observe( ObserveConfig::default() ).expect( "observe" );
 
 		isis.sail().await;
 		events.close();
@@ -68,8 +68,8 @@ fn one_receiver_drops()
 	{
 		let mut isis = Goddess::new();
 
-		let mut egypt_evts = isis.observe( ObserveConfig::default() );
-		let mut shine_evts = isis.observe( ObserveConfig::default() );
+		let mut egypt_evts = isis.observe( ObserveConfig::default() ).expect( "observe" );
+		let mut shine_evts = isis.observe( ObserveConfig::default() ).expect( "observe" );
 
 		isis.sail().await;
 
@@ -100,8 +100,8 @@ fn types()
 	{
 		let mut isis = Goddess::new();
 
-		let mut egypt_evts: Events<IsisEvent> = isis.observe( ObserveConfig::default() );
-		let mut shine_evts: Events<NutEvent > = isis.observe( ObserveConfig::default() );
+		let mut egypt_evts: Events<IsisEvent> = isis.observe( ObserveConfig::default() ).expect( "observe" );
+		let mut shine_evts: Events<NutEvent > = isis.observe( ObserveConfig::default() ).expect( "observe" );
 
 		isis.sail ().await;
 		isis.shine().await;
@@ -125,8 +125,8 @@ fn threads()
 	{
 		let mut isis = Goddess::new();
 
-		let mut egypt_evts = isis.observe( ObserveConfig::default() );
-		let mut shine_evts = isis.observe( ObserveConfig::default() );
+		let mut egypt_evts = isis.observe( ObserveConfig::default() ).expect( "observe" );
+		let mut shine_evts = isis.observe( ObserveConfig::default() ).expect( "observe" );
 
 
 		thread::spawn( move ||
@@ -159,7 +159,7 @@ fn alot_of_events()
 	{
 		let mut w = Goddess::new();
 
-		let mut events = w.observe( ObserveConfig::default() );
+		let mut events = w.observe( ObserveConfig::default() ).expect( "observe" );
 
 		let amount = 1000;
 
@@ -200,7 +200,7 @@ fn filter()
 			}
 		};
 
-		let mut events = isis.observe( ObserveConfig::default().filter( filter ) );
+		let mut events = isis.observe( ObserveConfig::default().filter( filter ) ).expect( "observe" );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -230,7 +230,7 @@ fn filter_true()
 
 		let filter = |_: &IsisEvent| true;
 
-		let mut events = isis.observe( ObserveConfig::default().filter( filter ) );
+		let mut events = isis.observe( ObserveConfig::default().filter( filter ) ).expect( "observe" );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -263,7 +263,7 @@ fn filter_false()
 
 		let filter = |_: &IsisEvent| false;
 
-		let mut events = isis.observe( ObserveConfig::default().filter( filter ) );
+		let mut events = isis.observe( ObserveConfig::default().filter( filter ) ).expect( "observe" );
 
 		isis.sail().await;
 		isis.sail().await;
@@ -300,7 +300,7 @@ fn filter_move()
 			}
 		};
 
-		let mut events = isis.observe( ObserveConfig::default().filter_boxed( filter ) );
+		let mut events = isis.observe( ObserveConfig::default().filter_boxed( filter ) ).expect( "observe" );
 
 		isis.sail().await;
 		isis.sail().await;

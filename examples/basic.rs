@@ -1,7 +1,7 @@
 use
 {
-	pharos  :: { *                             } ,
-	futures :: { executor::block_on, StreamExt } ,
+	pharos  :: { *                                      } ,
+	futures :: { executor::block_on, StreamExt, SinkExt } ,
 };
 
 
@@ -21,7 +21,10 @@ impl Goddess
 	//
 	pub async fn sail( &mut self )
 	{
-		self.pharos.notify( &GoddessEvent::Sailing ).await;
+		// It's infallible. Observers that error will be dropped, since the only kind of errors on
+		// channels are when the channel is closed.
+		//
+		let _ = self.pharos.send( GoddessEvent::Sailing ).await;
 	}
 }
 
@@ -45,7 +48,9 @@ enum GoddessEvent
 //
 impl Observable<GoddessEvent> for Goddess
 {
-	fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Events<GoddessEvent>
+	type Error = pharos::Error;
+
+	fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Result< Events<GoddessEvent>, Self::Error >
 	{
 		self.pharos.observe( options )
 	}
@@ -62,7 +67,7 @@ fn main()
 		// - channel type (bounded/unbounded)
 		// - a predicate to filter events
 		//
-		let mut events = isis.observe( Channel::Bounded( 3 ).into() );
+		let mut events = isis.observe( Channel::Bounded( 3 ).into() ).expect( "observe" );
 
 		// trigger an event
 		//

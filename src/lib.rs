@@ -40,12 +40,7 @@ pub use
 	filter       :: { Filter                             } ,
 	observable   :: { Observable, ObserveConfig, Channel } ,
 	events       :: { Events                             } ,
-};
-
-
-pub(crate) use
-{
-	error :: { Error } ,
+	error        :: { Error, ErrorKind                   } ,
 };
 
 
@@ -58,7 +53,7 @@ mod import
 
 		futures ::
 		{
-			future::{ join_all }, Stream, Sink, SinkExt,
+			Stream, Sink, ready,
 
 			channel::mpsc::
 			{

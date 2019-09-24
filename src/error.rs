@@ -7,7 +7,7 @@ use crate::{ import::* };
 //
 #[ derive( Debug ) ]
 //
-pub(crate) struct Error
+pub struct Error
 {
 	pub(crate) inner: Option< Box<dyn ErrorTrait + Send> >,
 	pub(crate) kind : ErrorKind,
@@ -19,12 +19,17 @@ pub(crate) struct Error
 //
 #[ derive( Debug ) ]
 //
-pub(crate) enum ErrorKind
+pub enum ErrorKind
 {
-	/// Failed to send on channel, normally means it's closed. Pharos does not expose these errors
-	/// to the user.
+	#[ doc( hidden ) ]
+	//
+	//This variant is only used internally.
 	//
 	SendError,
+
+	/// The pharos object is already closed. You can no longer
+	//
+	Closed,
 
 	#[ doc( hidden ) ]
 	//

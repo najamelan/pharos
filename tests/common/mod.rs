@@ -14,7 +14,7 @@ pub mod import
 			channel::mpsc :: Receiver          ,
 			channel::mpsc :: UnboundedReceiver ,
 			executor      :: block_on          ,
-			stream        :: StreamExt         ,
+			stream        :: StreamExt, SinkExt,
 		},
 	};
 }
@@ -43,19 +43,19 @@ impl Goddess
 
 	pub async fn sail( &mut self )
 	{
-		self.isis.notify( &IsisEvent::Sail ).await;
+		self.isis.send( IsisEvent::Sail ).await.expect( "send event" );
 	}
 
 	pub async fn dock( &mut self )
 	{
-		self.isis.notify( &IsisEvent::Dock ).await;
+		self.isis.send( IsisEvent::Dock ).await.expect( "send event" );
 	}
 
 	pub async fn shine( &mut self )
 	{
 		let evt = NutEvent { time: "midnight".into() };
 
-		self.nut.notify( &evt ).await;
+		self.nut.send( evt ).await.expect( "send event" );
 	}
 }
 
@@ -81,7 +81,9 @@ pub struct NutEvent
 
 impl Observable<IsisEvent> for Goddess
 {
-	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Events<IsisEvent>
+	type Error = pharos::Error;
+
+	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Result< Events<IsisEvent>, Self::Error >
 	{
 		self.isis.observe( options )
 	}
@@ -90,7 +92,9 @@ impl Observable<IsisEvent> for Goddess
 
 impl Observable<NutEvent> for Goddess
 {
-	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Events<NutEvent>
+	type Error = pharos::Error;
+
+	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Result< Events<NutEvent>, Self::Error >
 	{
 		self.nut.observe( options )
 	}
