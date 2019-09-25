@@ -9,7 +9,7 @@ use crate::{ import::* };
 //
 pub struct Error
 {
-	pub(crate) inner: Option< Box<dyn ErrorTrait + Send> >,
+	pub(crate) inner: Option< Box<dyn ErrorTrait + Send + Sync> >,
 	pub(crate) kind : ErrorKind,
 }
 
@@ -83,7 +83,7 @@ impl Error
 {
 	/// Allows matching on the error kind
 	//
-	pub(crate) fn _kind( &self ) -> &ErrorKind
+	pub fn kind( &self ) -> &ErrorKind
 	{
 		&self.kind
 	}
