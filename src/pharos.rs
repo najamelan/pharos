@@ -254,6 +254,9 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 		}
 
 
+		// We loop over all, polling them all. If any return pending, we return pending.
+		// If any return an error, we drop them.
+		//
 		let mut pending = false;
 		let     this    = self.get_mut();
 
@@ -264,7 +267,7 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 				match Pin::new( obs ).poll_flush( cx )
 				{
 					Poll::Pending       => pending = true ,
-					Poll::Ready(Ok())   => continue       ,
+					Poll::Ready(Ok(_))  => continue       ,
 
 					Poll::Ready(Err(_)) =>
 					{
@@ -276,8 +279,8 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 			}
 		}
 
-
-		Ok(()).into()
+		if pending { Poll::Pending }
+		else       { Ok(()).into() }
 	}
 
 
