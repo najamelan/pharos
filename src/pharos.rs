@@ -240,7 +240,7 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 			}
 		}
 
-		Ok(()).into()
+		Ok(())
 	}
 
 
