@@ -17,7 +17,7 @@ pub struct Error
 
 /// The different kind of errors that can happen when you use the `pharos` API.
 //
-#[ derive( Debug ) ]
+#[ derive( Debug, Copy, Clone, PartialEq, Eq ) ]
 //
 pub enum ErrorKind
 {
@@ -34,6 +34,23 @@ pub enum ErrorKind
 	#[ doc( hidden ) ]
 	//
 	__NonExhaustive__
+}
+
+
+impl PartialEq<&ErrorKind> for ErrorKind
+{
+	fn eq( &self, other: &&ErrorKind ) -> bool
+	{
+		self == *other
+	}
+}
+
+impl PartialEq<ErrorKind> for &ErrorKind
+{
+	fn eq( &self, other: &ErrorKind ) -> bool
+	{
+		*self == other
+	}
 }
 
 
