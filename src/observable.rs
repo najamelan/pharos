@@ -99,8 +99,25 @@ pub trait Observable<Event>
 //
 pub enum Channel
 {
-   /// A channel with a limited buffer (the usize parameter). Creates back pressure when the buffer is full.
+
+   /// A channel with a limited message queue (the usize parameter). Creates back pressure when the buffer is full.
    /// This means that producer tasks may block if consumers can't process fast enough.
+   ///
+   /// ## Implementation
+   ///
+   /// Some background on the bounded channels from the futures library (that we use as a backend):
+   /// - the `queue_size` is buffer + num senders (pharos is the only sender in our case). That means
+   /// that you can set a buffer size of 0 and still send a message in, which is somewhat counter
+   /// intuitive. It would make sense to do -1 on the user supplied queue_size to compensate, but:
+   /// - `poll_flush` just calls poll_ready. That means that flush will return Pending if the buffer is full,
+   /// even though in principle all messages are ready for the reader to read, so flush should be a
+   /// noop for a channel. It also kind of kills an exact buffer size, because it will make `SinkExt::send`
+   /// block when you send the last message that fits in the buffer. :-(
+   ///
+   /// Conclusion, we don't do the minus one. SinkExt::send works as expected, we don't need to validate
+   /// against users sending in 0 queue_size, because it's now a valid input, since we take a usize, you
+   /// can't send in negative numbers.
+   ///
    //
    Bounded(usize),
 

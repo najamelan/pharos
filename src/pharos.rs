@@ -167,6 +167,8 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 
 
 
+// See the documentation on Channel for how poll functions work for the channels we use.
+//
 impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 {
 	type Error = Error;
