@@ -1,5 +1,13 @@
 # Pharos Changelog
 
+## 0.4.0 - 2019-09-28
+
+- **BREAKING CHANGE**: The notify function had a sub optimal implemetation and did not allow notifying observers
+  from within `poll_*` functions. It has been replaced with an implementation of Sink on Pharos.
+- got rid of dependency on pin_project.
+- as Error::kind returns a reference to the error kind, you can now compare `ErrorKind::SomeVariant == err.kind()` without having to write: `&ErrorKind::SomeVariant == err.kind()`.
+- updated to futures-preview 0.3.0-alpha.19
+
 ## 0.3.2 - 2019-09-23
 
 - check spelling
