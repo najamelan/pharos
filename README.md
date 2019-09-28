@@ -9,8 +9,7 @@
 
 More seriously, pharos is a small [observer](https://en.wikipedia.org/wiki/Observer_pattern) library that let's you create futures 0.3 streams that observers can listen to.
 
-I created it to leverage interoperability we can create by using async [Stream](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.18/futures_core/stream/trait.Stream.html) and [Sink](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.18/futures/sink/trait.Sink.html
-) from the futures library. So you can use all stream combinators, forward it into Sinks and so on.
+I created it to leverage interoperability we can create by using async [Stream](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/stream/trait.Stream.html) and [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html) from the futures library. So you can use all stream combinators, forward it into Sinks and so on.
 
 Minimal rustc version: 1.39.
 
@@ -63,14 +62,14 @@ With [cargo yaml](https://gitlab.com/storedbox/cargo-yaml):
 ```yaml
 dependencies:
 
-  pharos: ^0.3
+  pharos: ^0.4
 ```
 
 With raw Cargo.toml
 ```toml
 [dependencies]
 
-   pharos = "0.3"
+   pharos = "0.4"
 ```
 
 ### Upgrade
@@ -85,17 +84,17 @@ This crate only has one dependencies. Cargo will automatically handle it's depen
 ```yaml
 dependencies:
 
-  futures-preview : { version: ^0.3.0-alpha, features: [async-await, nightly] }
+  futures-preview: { version: ^0.3.0-alpha, features: [async-await, nightly] }
 ```
 
 ## Usage
 
-`pharos` only works for async code, as the notify method is asynchronous. Observers must consume the messages
-fast enough, otherwise they will slow down the observable (bounded channel) or cause memory leak (unbounded channel).
+`pharos` only works from async code, implementing Sink to notify observers. You can notify observers from within
+`poll_*` methods by calling the poll methods of the [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html) impl directly. In async context you can use [SinkExt::send](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.SinkExt.html#method.send). Observers must consume the messages fast enough, otherwise they will slow down the observable (bounded channel) or cause memory leak (unbounded channel).
 
 Whenever observers want to unsubscribe, they can just drop the stream or call `close` on it. If you are an observable and you want to notify observers that no more messages will follow, just drop the pharos object. Failing that, create an event type that signifies EOF and send that to observers.
 
-Your event type will be cloned once for each observer, so you might want to put it in an Arc if it's bigger than a pointer size (eg. there's no point putting an enum without data in an Arc).
+Your event type will be cloned once for each observer, so you might want to put it in an Arc if it's bigger than 2 pointer sizes (eg. there's no point putting an enum without data in an Arc).
 
 Examples can be found in the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory. Here is the most basic one:
 

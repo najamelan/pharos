@@ -3,7 +3,7 @@ use crate::{ import::* };
 
 /// The error type for errors happening in `pharos`.
 ///
-/// Use [`err.kind()`] to know which kind of error happened.
+/// Use [`Error::kind()`] to know which kind of error happened.
 //
 #[ derive( Debug ) ]
 //
@@ -11,6 +11,35 @@ pub struct Error
 {
 	pub(crate) inner: Option< Box<dyn ErrorTrait + Send + Sync> >,
 	pub(crate) kind : ErrorKind,
+}
+
+
+
+impl Error
+{
+	/// Identify which error happened.
+	//
+	pub fn kind( &self ) -> &ErrorKind
+	{
+		&self.kind
+	}
+}
+
+
+impl From<ErrorKind> for Error
+{
+	fn from( kind: ErrorKind ) -> Error
+	{
+		Error { inner: None, kind }
+	}
+}
+
+impl From<FutSendError> for Error
+{
+	fn from( inner: FutSendError ) -> Error
+	{
+		Error { inner: Some( Box::new( inner ) ), kind: ErrorKind::SendError }
+	}
 }
 
 
@@ -28,10 +57,11 @@ pub enum ErrorKind
 	SendError,
 
 	/// The pharos object is already closed. You can no longer send messages or observe it.
+	/// This should only happen if you call [SinkExt::close](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.SinkExt.html#method.close) on it.
 	//
 	Closed,
 
-	/// The minimum valid buffer size for [`Channel::Bounded`] is `1`, you send in `0`.
+	/// The minimum valid buffer size for [`Channel::Bounded`](crate::observable::Channel) is `1`, you sent in `0`.
 	//
 	MinChannelSizeOne,
 
@@ -99,30 +129,3 @@ impl fmt::Display for Error
 	}
 }
 
-
-
-impl Error
-{
-	/// Allows matching on the error kind
-	//
-	pub fn kind( &self ) -> &ErrorKind
-	{
-		&self.kind
-	}
-}
-
-impl From<ErrorKind> for Error
-{
-	fn from( kind: ErrorKind ) -> Error
-	{
-		Error { inner: None, kind }
-	}
-}
-
-impl From<FutSendError> for Error
-{
-	fn from( inner: FutSendError ) -> Error
-	{
-		Error { inner: Some( Box::new( inner ) ), kind: ErrorKind::SendError }
-	}
-}

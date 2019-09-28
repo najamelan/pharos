@@ -1,6 +1,9 @@
 use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error, ErrorKind };
 
+
 /// A stream of events. This is returned from [Observable::observe](crate::Observable::observe).
+/// You will only start receiving events from the moment you call this. Any events in the observed
+/// object emitted before will not be delivered.
 ///
 /// For pharos 0.4.0 on x64 Linux: `std::mem::size_of::<Events<_>>() == 16`
 //
@@ -40,9 +43,8 @@ impl<Event> Events<Event> where Event: Clone + 'static + Send
 	}
 
 
-	/// Close the channel. This way the sender will stop sending new events, and you can still
-	/// continue to read any events that are still pending in the channel. This avoids data loss
-	/// compared to just dropping this object.
+	/// Disconnect from the observable object. This way the sender will stop sending new events
+	/// and you can still continue to read any events that are still pending in the channel.
 	//
 	pub fn close( &mut self )
 	{
@@ -52,7 +54,8 @@ impl<Event> Events<Event> where Event: Clone + 'static + Send
 
 
 
-
+// Just forward
+//
 impl<Event> Stream for Events<Event> where Event: Clone + 'static + Send
 {
 	type Item = Event;
@@ -70,7 +73,7 @@ impl<Event> Stream for Events<Event> where Event: Clone + 'static + Send
 //
 pub(crate) enum Sender<Event> where Event: Clone + 'static + Send
 {
-	Bounded  { tx: FutSender<Event>         , filter: Option<Filter<Event>> } ,
+	Bounded  { tx: FutSender         <Event>, filter: Option<Filter<Event>> } ,
 	Unbounded{ tx: FutUnboundedSender<Event>, filter: Option<Filter<Event>> } ,
 }
 
@@ -79,7 +82,7 @@ pub(crate) enum Sender<Event> where Event: Clone + 'static + Send
 
 impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 {
-	// Verify whether this observer is still around
+	// Verify whether this observer is still around.
 	//
 	pub(crate) fn is_closed( &self ) -> bool
 	{
@@ -91,7 +94,7 @@ impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 	}
 
 
-	/// Check whether this sender is interested in this event
+	/// Check whether this sender is interested in this event.
 	//
 	pub(crate) fn filter( &mut self, evt: &Event ) -> bool
 	{
@@ -115,7 +118,7 @@ impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 
 
 
-/// The receiver of the channel.
+/// The receiver of the channel, abstracting over different channel types.
 //
 enum Receiver<Event> where Event: Clone + 'static + Send
 {

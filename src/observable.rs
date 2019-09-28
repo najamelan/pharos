@@ -1,4 +1,4 @@
-use crate :: { import::*, Filter, Events };
+use crate :: { Filter, Events };
 
 /// Indicate that a type is observable. You can call [`observe`](Observable::observe) to get a
 /// stream of events.
@@ -75,7 +75,10 @@ pub trait Observable<Event>
 
    where Event: Clone + 'static + Send ,
 {
-   /// The error type that is returned if observing is not possible. [Pharos](crate::Pharos) implements Sink
+   /// The error type that is returned if observing is not possible.
+   ///
+   /// [Pharos](crate::Pharos) implements
+   /// [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html)
    /// which has a close method, so observing will no longer be possible after close is called.
    ///
    /// Other than that, you might want to have moments in your objects lifetime when you don't want to take
@@ -83,9 +86,9 @@ pub trait Observable<Event>
    ///
    /// You can of course map the error of pharos to your own error type.
    //
-   type Error: ErrorTrait;
+   type Error: std::error::Error;
 
-   /// Add an observer to the observable. Options can be in order to choose channel type and
+   /// Add an observer to the observable. Options allow chosing the channel type and
    /// to filter events with a predicate.
    //
    fn observe( &mut self, options: ObserveConfig<Event> ) -> Result<Events<Event>, Self::Error>;
@@ -128,8 +131,9 @@ impl Default for Channel
 
 
 
-/// Configuration for your event stream, passed to [Observable::observe] when subscribing.
-/// This let's you choose the type of [channel](Channel) and let's
+/// Configuration for your event stream.
+///
+/// Pass to [Observable::observe] when subscribing. This let's you choose the type of [channel](Channel) and let's
 /// you set a [filter](Filter) to ignore certain events.
 ///
 /// ```
@@ -229,7 +233,7 @@ impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
 }
 
 
-/// Create a ObserveConfig from a [Channel], getting default values for other options.
+/// Create a [ObserveConfig] from a [Channel], getting default values for other options.
 //
 impl<Event> From<Channel> for ObserveConfig<Event> where Event: Clone + 'static + Send
 {
@@ -240,7 +244,7 @@ impl<Event> From<Channel> for ObserveConfig<Event> where Event: Clone + 'static 
 }
 
 
-/// Create a ObserveConfig from a [Filter], getting default values for other options.
+/// Create a [ObserveConfig] from a [Filter], getting default values for other options.
 //
 impl<Event> From<Filter<Event>> for ObserveConfig<Event> where Event: Clone + 'static + Send
 {

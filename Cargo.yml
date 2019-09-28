@@ -43,8 +43,8 @@ badges:
 
 dependencies:
 
-  futures-preview : { version: ^0.3.0-alpha, features: [async-await] }
+  futures-preview: { version: ^0.3.0-alpha, features: [async-await] }
 
 dev-dependencies:
 
-  assert_matches      : ^1
+  assert_matches: ^1

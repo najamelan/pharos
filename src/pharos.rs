@@ -1,8 +1,8 @@
 use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender, Error, ErrorKind, Channel };
 
 
-/// The Pharos lighthouse. When you implement Observable on your type, you can forward
-/// the [`observe`](Observable::observe) method to Pharos and call notify on it.
+/// The Pharos lighthouse. When you implement [Observable] on your type, you can forward
+/// the [`observe`](Observable::observe) method to Pharos and use [SinkExt::send](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.SinkExt.html#method.send) to notify observers.
 ///
 /// You can of course create several `Pharos` (I know, historical sacrilege) for (different) types
 /// of events.
@@ -12,17 +12,16 @@ use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender, Err
 ///
 /// ## Implementation.
 ///
-/// Currently just holds a `Vec<Option<Sender>>`. It will stop notifying observers if the channel has
+/// Currently just holds a `Vec<Option<Sender>>`. It will drop observers if the channel has
 /// returned an error, which means it is closed or disconnected. However, we currently don't
 /// compact the vector. Slots are reused for new observers, but the vector never shrinks.
 ///
-/// In observe, we do loop the vector to find a free spot to re-use before pushing.
-///
-/// **Note**: we only detect that observers can be removed when [futures::SinkExt::send] or [Pharos::num_observers]
+/// **Note**: we only detect that observers can be removed when [SinkExt::send](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.SinkExt.html#method.send) or [Pharos::num_observers]
 /// is being called. Otherwise, we won't find out about disconnected observers and the vector of observers
 /// will not mark deleted observers and thus their slots can not be reused.
 ///
-/// The [Sink] impl is not very optimized for the moment. It just loops over all observers in each poll method
+/// The [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html) impl
+/// is not very optimized for the moment. It just loops over all observers in each poll method
 /// so it will call `poll_ready` and `poll_flush` again for observers that already returned `Poll::Ready(Ok(()))`.
 ///
 /// TODO: I will do some benchmarking and see if this can be improved, eg. by keeping a state which tracks which
@@ -63,7 +62,7 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 {
 	/// Create a new Pharos. May it's light guide you to safe harbor.
 	///
-	/// You can set the initial capacity of the vector of senders, if you know you will a lot of observers
+	/// You can set the initial capacity of the vector of observers, if you know you will a lot of observers
 	/// it will save allocations by setting this to a higher number.
 	///
 	/// For pharos 0.4.0 on x64 Linux: `std::mem::size_of::<Option<Sender<_>>>() == 56 bytes`.
@@ -88,7 +87,7 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 	}
 
 
-	/// Returns the number of actual observers that are still listening (have not closed or dropped the Events).
+	/// Returns the number of actual observers that are still listening (have not closed or dropped the [Events]).
 	/// This will loop and it will verify for each if they are closed, clearing them from the internal storage
 	/// if they are closed. This is similar to what notify does, but without sending an event.
 	//
@@ -136,7 +135,10 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 {
 	type Error = Error;
 
-	/// Will try to re-use slots in the vector from disconnected observers.
+	/// Will re-use slots from disconnected observers to avoid growing to much.
+	///
+	/// TODO: provide API for the client to compact the pharos object after reducing the
+	///       number of observers.
 	//
 	fn observe( &mut self, options: ObserveConfig<Event> ) -> Result< Events<Event>, Self::Error >
 	{
