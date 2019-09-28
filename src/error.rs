@@ -27,9 +27,13 @@ pub enum ErrorKind
 	//
 	SendError,
 
-	/// The pharos object is already closed. You can no longer
+	/// The pharos object is already closed. You can no longer send messages or observe it.
 	//
 	Closed,
+
+	/// The minimum valid buffer size for [`Channel::Bounded`] is `1`, you send in `0`.
+	//
+	MinChannelSizeOne,
 
 	#[ doc( hidden ) ]
 	//
@@ -72,7 +76,8 @@ impl fmt::Display for ErrorKind
 	{
 		match self
 		{
-			Self::SendError   => fmt::Display::fmt( "Channel closed.", f ) ,
+			Self::SendError         => fmt::Display::fmt( "Channel closed.", f ) ,
+			Self::MinChannelSizeOne => fmt::Display::fmt( "The minimum valid buffer size for Channel::Bounded is 1, you send in 0.", f ) ,
 
 			_ => unreachable!(),
 		}

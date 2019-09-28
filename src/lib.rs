@@ -66,4 +66,12 @@ mod import
 			} ,
 		},
 	};
+
+	#[ cfg( test ) ]
+	//
+	pub(crate) use
+	{
+		assert_matches :: { assert_matches                               } ,
+		futures        :: { future::poll_fn, executor::block_on, SinkExt } ,
+	};
 }

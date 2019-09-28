@@ -6,15 +6,17 @@ pub mod import
 	//
 	pub(crate) use
 	{
-		pharos :: { *                 } ,
-		std    :: { sync::Arc, thread } ,
+		pharos :: { *                                                    } ,
+		std    :: { sync::Arc, thread, task::{ Context, Poll }, pin::Pin } ,
 
 		futures ::
 		{
-			channel::mpsc :: Receiver          ,
-			channel::mpsc :: UnboundedReceiver ,
-			executor      :: block_on          ,
-			stream        :: StreamExt, SinkExt,
+			channel::mpsc :: Receiver                   ,
+			channel::mpsc :: UnboundedReceiver          ,
+			executor      :: block_on                   ,
+			stream        :: Stream, StreamExt, SinkExt ,
+			sink          :: Sink                       ,
+			future        :: poll_fn                    ,
 		},
 	};
 }

@@ -22,7 +22,7 @@ fn basic()
 	block_on( async move
 	{
 		let mut isis   = Goddess::new();
-		let mut events = isis.observe( Channel::Bounded( 5 ).into() ).expect( "observe" );
+		let mut events = isis.observe( Channel::Bounded( 2 ).into() ).expect( "observe" );
 
 		isis.sail().await;
 		isis.sail().await;

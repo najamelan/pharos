@@ -1,4 +1,4 @@
-use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender, Error, ErrorKind };
+use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender, Error, ErrorKind, Channel };
 
 
 /// The Pharos lighthouse. When you implement Observable on your type, you can forward
@@ -146,6 +146,20 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 		}
 
 
+		match options.channel
+		{
+			Channel::Bounded(queue_size) =>
+			{
+				if queue_size < 1
+				{
+					return Err( ErrorKind::MinChannelSizeOne.into() );
+				}
+			}
+
+			_ => {}
+		}
+
+
 		let (events, sender) = Events::new( options );
 
 
@@ -183,12 +197,16 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 		}
 
 
+		// As soon as any is not ready, we are not ready
+		//
 		for obs in self.get_mut().observers.iter_mut()
 		{
 			if let Some( ref mut o ) = obs
 			{
 				let res = ready!( Pin::new( o ).poll_ready( cx ) );
 
+				// Errors mean disconnected, so drop.
+				//
 				if res.is_err()
 				{
 					*obs = None;
@@ -198,6 +216,7 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 
 		Ok(()).into()
 	}
+
 
 
 	fn start_send( self: Pin<&mut Self>, evt: Event ) -> Result<(), Self::Error>
@@ -327,13 +346,26 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 
 
 
-
 #[ cfg( test ) ]
 //
 mod tests
 {
-	use super::*;
-	use futures::SinkExt;
+	// Tested:
+	//
+	// - ✔ debug impl shows generic type
+	// - ✔ storage length and free slots bookkeeping
+	// - ✔ observe: we actually reuse free slots
+	// - ✔ observe: cannot observe after calling close
+	// - ✔ observe: refuse Channel::Bounded(0)
+	// - ✔ poll_ready have a channel that is full, verify we return pending.
+	// - ✔ poll_ready have a channel that is disconnected, verify we drop it.
+	// - ✔ poll_ready should return closed if the pharos is closed.
+	// - ✔ start_send verify message arrives
+	// - ✔ start_send drop disconnected channel
+	// - ✔ start_send filter message
+	// - ✔ poll_flush drop on error
+	//
+	use crate :: { *, import::* };
 
 	#[test]
 	//
@@ -403,7 +435,7 @@ mod tests
 	}
 
 
-	// Make sure we are reusing slots
+	// observe: Make sure we are reusing slots
 	//
 	#[test]
 	//
@@ -444,7 +476,7 @@ mod tests
 	}
 
 
-	// verify we can no longer observer after calling close
+	// observe: verify we can no longer observe after calling close
 	//
 	#[test]
 	//
@@ -452,8 +484,172 @@ mod tests
 	{
 		let mut ph = Pharos::<bool>::default();
 
-		futures::executor::block_on( ph.close() ).expect( "close" );
+		block_on( ph.close() ).expect( "close" );
 
-		assert!( ph.observe( ObserveConfig::default() ).is_err() );
+		let res = ph.observe( ObserveConfig::default() );
+
+		assert!   ( res.is_err() );
+		assert_eq!( ErrorKind::Closed, res.unwrap_err().kind() );
 	}
+
+
+	// observe: refuse Channel::Bounded(0)
+	//
+	#[test]
+	//
+	fn observe_refuse_zero()
+	{
+		let mut ph = Pharos::<bool>::default();
+
+		let res = ph.observe( Channel::Bounded(0).into() );
+
+		assert!   ( res.is_err() );
+		assert_eq!( ErrorKind::MinChannelSizeOne, res.unwrap_err().kind() );
+	}
+
+
+	// verify that one observer blocks pharos.
+	//
+	#[ test ]
+	//
+	fn poll_ready_pending()
+	{
+		block_on( poll_fn( move |mut cx|
+		{
+			let mut ph = Pharos::default();
+
+			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
+			let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
+			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
+
+			let mut ph = Pin::new( &mut ph );
+
+			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+			assert!( ph.as_mut().start_send( true ).is_ok() );
+
+			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Pending );
+
+			assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(true)));
+
+			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+
+			().into()
+		}));
+	}
+
+
+
+	// pharos drops closed observers.
+	//
+	#[ test ]
+	//
+	fn poll_ready_drop()
+	{
+		block_on( poll_fn( move |mut cx|
+		{
+			let mut ph = Pharos::<bool>::default();
+
+			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
+			let full     = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
+			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
+
+			let mut ph = Pin::new( &mut ph );
+
+			drop( full );
+
+			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+
+			assert!( ph.observers[1].is_none() );
+			().into()
+		}));
+	}
+
+
+
+	// poll_ready should return closed if the pharos is closed.
+	//
+	#[ test ]
+	//
+	fn poll_ready_closed()
+	{
+		block_on( poll_fn( move |mut cx|
+		{
+			let mut ph = Pharos::<bool>::default();
+
+			let mut ph = Pin::new( &mut ph );
+
+				assert_matches!( ph.as_mut().poll_close( cx ), Poll::Ready(Ok(())) );
+
+			let res = ph.as_mut().poll_ready( &mut cx );
+
+				assert_matches!( res, Poll::Ready( Err(_) ) );
+
+				match res
+				{
+					Poll::Ready( Err( e ) ) => assert_eq!( ErrorKind::Closed, e.kind() ),
+					_                       => assert!( false, "wrong result " ),
+				}
+
+			().into()
+
+		}));
+	}
+
+
+
+	// start_send verify message arrives.
+	//
+	#[ test ]
+	//
+	fn start_send_arrive()
+	{
+		block_on( poll_fn( move |mut cx|
+		{
+			let mut ph = Pharos::default();
+
+			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
+			let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
+			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
+
+			let mut ph = Pin::new( &mut ph );
+
+			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+			assert!( ph.as_mut().start_send( 3 ).is_ok() );
+
+			assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(3)));
+
+			().into()
+		}));
+	}
+
+
+
+	// pharos drops closed observers.
+	//
+	#[ test ]
+	//
+	fn poll_flush_drop()
+	{
+		block_on( poll_fn( move |mut cx|
+		{
+			let mut ph = Pharos::<bool>::default();
+
+			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
+			let full     = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
+			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
+
+			let mut ph = Pin::new( &mut ph );
+
+			drop( full );
+
+			assert_matches!( ph.as_mut().poll_flush( &mut cx ), Poll::Ready( Ok(_) ) );
+
+			assert!( ph.observers[1].is_none() );
+			().into()
+		}));
+	}
+
+
+
+
 }

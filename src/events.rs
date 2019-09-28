@@ -1,4 +1,4 @@
-use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error };
+use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error, ErrorKind };
 
 /// A stream of events. This is returned from [Observable::observe](crate::Observable::observe).
 ///
@@ -20,7 +20,7 @@ impl<Event> Events<Event> where Event: Clone + 'static + Send
 		{
 			Channel::Bounded( queue_size ) =>
 			{
-				let (tx, rx) = mpsc::channel( queue_size );
+				let (tx, rx) = mpsc::channel( queue_size - 1 );
 
 				( Sender::Bounded{ tx, filter: config.filter }, Receiver::Bounded{ rx } )
 			}
@@ -194,12 +194,31 @@ impl<Event> Sink<Event> for Sender<Event> where Event: Clone + 'static + Send
 	}
 
 
-	fn poll_flush( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
+	// Note that on futures-rs bounded channels poll_flush has a problematic implementation.
+	// - it just calls poll_ready, which means it will be pending when the buffer is full. So
+	//   it will make SinkExt::send hang, bad!
+	// - it will swallow disconnected errors, so we don't get feedback allowing us to free slots.
+	//
+	// In principle channels are always flushed, because when the message is in the buffer, it's
+	// ready for the reader to read. So this should just be a noop.
+	//
+	// We compensate for the error swallowing by checking `is_closed`.
+	//
+	fn poll_flush( self: Pin<&mut Self>, _cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
 		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => Pin::new( tx ).poll_flush( cx ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => Pin::new( tx ).poll_flush( cx ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } =>
+			{
+				if tx.is_closed() { Poll::Ready(Err( ErrorKind::Closed.into() ))}
+				else              { Poll::Ready(Ok ( ()                       ))}
+			}
+
+			Sender::Unbounded{ tx, .. } =>
+			{
+				if tx.is_closed() { Poll::Ready(Err( ErrorKind::Closed.into() ))}
+				else              { Poll::Ready(Ok ( ()                       ))}
+			}
 		}
 	}
 
