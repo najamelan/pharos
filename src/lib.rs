@@ -40,12 +40,7 @@ pub use
 	filter       :: { Filter                             } ,
 	observable   :: { Observable, ObserveConfig, Channel } ,
 	events       :: { Events                             } ,
-};
-
-
-pub(crate) use
-{
-	error :: { Error } ,
+	error        :: { Error, ErrorKind                   } ,
 };
 
 
@@ -55,11 +50,10 @@ mod import
 	{
 		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name } ,
 		std            :: { task::{ Poll, Context }, pin::Pin                           } ,
-		pin_project    :: { project, pin_project                                        } ,
 
 		futures ::
 		{
-			future::{ join_all }, Stream, Sink, SinkExt,
+			Stream, Sink, ready,
 
 			channel::mpsc::
 			{
@@ -71,5 +65,13 @@ mod import
 				SendError         as FutSendError         ,
 			} ,
 		},
+	};
+
+	#[ cfg( test ) ]
+	//
+	pub(crate) use
+	{
+		assert_matches :: { assert_matches                               } ,
+		futures        :: { future::poll_fn, executor::block_on, SinkExt } ,
 	};
 }

@@ -28,6 +28,8 @@ use crate :: { Filter, Events };
 ///
 /// impl Steps
 /// {
+///    // We can use this as a predicate to filter events.
+///    //
 ///    fn is_err( &self ) -> bool
 ///    {
 ///       match self
@@ -39,15 +41,17 @@ use crate :: { Filter, Events };
 /// }
 ///
 ///
-/// // The object we want to be observable
+/// // The object we want to be observable.
 /// //
 /// struct Foo { pharos: Pharos<Steps> };
 ///
 /// impl Observable<Steps> for Foo
 /// {
+///    type Error = pharos::Error;
+///
 ///    // Pharos implements observable, so we just forward the call.
 ///    //
-///    fn observe( &mut self, options: ObserveConfig<Steps> ) -> Events<Steps>
+///    fn observe( &mut self, options: ObserveConfig<Steps> ) -> Result< Events<Steps>, Self::Error >
 ///    {
 ///       self.pharos.observe( options )
 ///    }
@@ -59,9 +63,9 @@ use crate :: { Filter, Events };
 /// async fn task()
 /// {
 ///    let mut foo    = Foo { pharos: Pharos::default() };
-///    let mut errors = foo.observe( Filter::Pointer( Steps::is_err ).into() );
+///    let mut errors = foo.observe( Filter::Pointer( Steps::is_err ).into() ).expect( "observe" );
 ///
-///    // will only be notified on errors now
+///    // will only be notified on errors thanks to the filter.
 ///    //
 ///    let next_error = errors.next().await;
 /// }
@@ -71,10 +75,23 @@ pub trait Observable<Event>
 
    where Event: Clone + 'static + Send ,
 {
-   /// Add an observer to the observable. Options can be in order to choose channel type and
+   /// The error type that is returned if observing is not possible.
+   ///
+   /// [Pharos](crate::Pharos) implements
+   /// [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html)
+   /// which has a close method, so observing will no longer be possible after close is called.
+   ///
+   /// Other than that, you might want to have moments in your objects lifetime when you don't want to take
+   /// any more observers. Returning a result from [observe](Observable::observe) enables that.
+   ///
+   /// You can of course map the error of pharos to your own error type.
+   //
+   type Error: std::error::Error;
+
+   /// Add an observer to the observable. Options allow chosing the channel type and
    /// to filter events with a predicate.
    //
-   fn observe( &mut self, options: ObserveConfig<Event> ) -> Events<Event>;
+   fn observe( &mut self, options: ObserveConfig<Event> ) -> Result<Events<Event>, Self::Error>;
 }
 
 
@@ -85,8 +102,11 @@ pub trait Observable<Event>
 //
 pub enum Channel
 {
-   /// A channel with a limited buffer (the usize parameter). Creates back pressure when the buffer is full.
+
+   /// A channel with a limited message queue (the usize parameter). Creates back pressure when the buffer is full.
    /// This means that producer tasks may block if consumers can't process fast enough.
+   ///
+   /// The minimum valid buffer size is 1.
    //
    Bounded(usize),
 
@@ -111,8 +131,9 @@ impl Default for Channel
 
 
 
-/// Configuration for your event stream, passed to [Observable::observe] when subscribing.
-/// This let's you choose the type of [channel](Channel) and let's
+/// Configuration for your event stream.
+///
+/// Pass to [Observable::observe] when subscribing. This let's you choose the type of [channel](Channel) and let's
 /// you set a [filter](Filter) to ignore certain events.
 ///
 /// ```
@@ -212,7 +233,7 @@ impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
 }
 
 
-/// Create a ObserveConfig from a [Channel], getting default values for other options.
+/// Create a [ObserveConfig] from a [Channel], getting default values for other options.
 //
 impl<Event> From<Channel> for ObserveConfig<Event> where Event: Clone + 'static + Send
 {
@@ -223,7 +244,7 @@ impl<Event> From<Channel> for ObserveConfig<Event> where Event: Clone + 'static 
 }
 
 
-/// Create a ObserveConfig from a [Filter], getting default values for other options.
+/// Create a [ObserveConfig] from a [Filter], getting default values for other options.
 //
 impl<Event> From<Filter<Event>> for ObserveConfig<Event> where Event: Clone + 'static + Send
 {

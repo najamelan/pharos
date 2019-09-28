@@ -15,11 +15,11 @@ fn both()
 	{
 		let mut isis = Goddess::new();
 
-		let mut events: Events<IsisEvent> = isis.observe( Channel::Bounded( 5 ).into() );
-		let mut nuevts: Events<NutEvent>  = isis.observe( Channel::Bounded( 5 ).into() );
+		let mut events: Events<IsisEvent> = isis.observe( Channel::Bounded( 5 ).into() ).expect( "observe" );
+		let mut nuevts: Events<NutEvent>  = isis.observe( Channel::Bounded( 5 ).into() ).expect( "observe" );
 
-		let mut ubevts: Events<IsisEvent> = isis.observe( ObserveConfig::default()     );
-		let mut ubnuts: Events<NutEvent>  = isis.observe( ObserveConfig::default()     );
+		let mut ubevts: Events<IsisEvent> = isis.observe( ObserveConfig::default()     ).expect( "observe" );
+		let mut ubnuts: Events<NutEvent>  = isis.observe( ObserveConfig::default()     ).expect( "observe" );
 
 		isis.sail ().await;
 		isis.shine().await;

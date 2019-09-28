@@ -1,8 +1,11 @@
-use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error };
+use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error, ErrorKind };
+
 
 /// A stream of events. This is returned from [Observable::observe](crate::Observable::observe).
+/// You will only start receiving events from the moment you call this. Any events in the observed
+/// object emitted before will not be delivered.
 ///
-/// For pharos 0.3.0 on x64 Linux: `std::mem::size_of::<Events<_>>() == 16`
+/// For pharos 0.4.0 on x64 Linux: `std::mem::size_of::<Events<_>>() == 16`
 //
 #[ derive( Debug ) ]
 //
@@ -20,7 +23,7 @@ impl<Event> Events<Event> where Event: Clone + 'static + Send
 		{
 			Channel::Bounded( queue_size ) =>
 			{
-				let (tx, rx) = mpsc::channel( queue_size );
+				let (tx, rx) = mpsc::channel( queue_size - 1 );
 
 				( Sender::Bounded{ tx, filter: config.filter }, Receiver::Bounded{ rx } )
 			}
@@ -40,9 +43,8 @@ impl<Event> Events<Event> where Event: Clone + 'static + Send
 	}
 
 
-	/// Close the channel. This way the sender will stop sending new events, and you can still
-	/// continue to read any events that are still pending in the channel. This avoids data loss
-	/// compared to just dropping this object.
+	/// Disconnect from the observable object. This way the sender will stop sending new events
+	/// and you can still continue to read any events that are still pending in the channel.
 	//
 	pub fn close( &mut self )
 	{
@@ -52,7 +54,8 @@ impl<Event> Events<Event> where Event: Clone + 'static + Send
 
 
 
-
+// Just forward
+//
 impl<Event> Stream for Events<Event> where Event: Clone + 'static + Send
 {
 	type Item = Event;
@@ -66,14 +69,12 @@ impl<Event> Stream for Events<Event> where Event: Clone + 'static + Send
 
 
 /// The sender of the channel.
-/// For pharos 0.3.0 on x64 Linux: `std::mem::size_of::<Sender<_>>() == 56`
-//
-#[ pin_project ]
+/// For pharos 0.4.0 on x64 Linux: `std::mem::size_of::<Sender<_>>() == 56`
 //
 pub(crate) enum Sender<Event> where Event: Clone + 'static + Send
 {
-	Bounded  { #[pin] tx: FutSender<Event>         , filter: Option<Filter<Event>> } ,
-	Unbounded{ #[pin] tx: FutUnboundedSender<Event>, filter: Option<Filter<Event>> } ,
+	Bounded  { tx: FutSender         <Event>, filter: Option<Filter<Event>> } ,
+	Unbounded{ tx: FutUnboundedSender<Event>, filter: Option<Filter<Event>> } ,
 }
 
 
@@ -81,7 +82,7 @@ pub(crate) enum Sender<Event> where Event: Clone + 'static + Send
 
 impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 {
-	// Verify whether this observer is still around
+	// Verify whether this observer is still around.
 	//
 	pub(crate) fn is_closed( &self ) -> bool
 	{
@@ -93,63 +94,36 @@ impl<Event> Sender<Event>  where Event: Clone + 'static + Send
 	}
 
 
-	// Notify the observer and return a bool indicating whether this observer is still
-	// operational. If an error happens on a channel it usually means that the channel
-	// is closed, in which case we should drop this sender.
+	/// Check whether this sender is interested in this event.
 	//
-	pub(crate) async fn notify( &mut self, evt: &Event ) -> bool
+	pub(crate) fn filter( &mut self, evt: &Event ) -> bool
 	{
-		if self.is_closed() { return false }
-
 		match self
 		{
-			Sender::Bounded  { tx, filter } => Self::notifier( tx, filter, evt ).await,
-			Sender::Unbounded{ tx, filter } => Self::notifier( tx, filter, evt ).await,
+			Sender::Bounded  { filter, .. } => Self::filter_inner( filter, evt ),
+			Sender::Unbounded{ filter, .. } => Self::filter_inner( filter, evt ),
 		}
 	}
 
 
-	async fn notifier
-	(
-		mut tx: impl Sink<Event> + Unpin   ,
-		filter: &mut Option<Filter<Event>> ,
-		evt   : &Event                     ,
-	)
-
-		-> bool
-
+	fn filter_inner( filter: &mut Option<Filter<Event>>, evt: &Event ) -> bool
 	{
-		let interested = match filter
+		match filter
 		{
 			Some(f) => f.call(evt),
 			None    => true       ,
-		};
-
-
-		#[ allow( clippy::match_bool ) ]
-		//
-		match interested
-		{
-			true  => tx.send( evt.clone() ).await.is_ok(),
-
-			// since we don't try to send, we know nothing about whether they are still
-			// observing, so assume they do.
-			//
-			false => true,
 		}
 	}
 }
 
 
 
-/// The receiver of the channel.
-//
-#[ pin_project ]
+/// The receiver of the channel, abstracting over different channel types.
 //
 enum Receiver<Event> where Event: Clone + 'static + Send
 {
-	Bounded  { #[pin] rx: FutReceiver<Event>          } ,
-	Unbounded{ #[pin] rx: FutUnboundedReceiver<Event> } ,
+	Bounded  { rx: FutReceiver<Event>          } ,
+	Unbounded{ rx: FutUnboundedReceiver<Event> } ,
 }
 
 
@@ -186,16 +160,12 @@ impl<Event> Stream for Receiver<Event> where Event: Clone + 'static + Send
 {
 	type Item = Event;
 
-	#[ project ]
-	//
 	fn poll_next( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll< Option<Self::Item> >
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Receiver::Bounded  { rx } => rx.poll_next( cx ),
-			Receiver::Unbounded{ rx } => rx.poll_next( cx ),
+			Receiver::Bounded  { rx } => Pin::new( rx ).poll_next( cx ),
+			Receiver::Unbounded{ rx } => Pin::new( rx ).poll_next( cx ),
 		}
 	}
 }
@@ -206,57 +176,62 @@ impl<Event> Sink<Event> for Sender<Event> where Event: Clone + 'static + Send
 {
 	type Error = Error;
 
-	#[ project ]
-	//
+
 	fn poll_ready( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.poll_ready( cx ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.poll_ready( cx ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } => Pin::new( tx ).poll_ready( cx ).map_err( Into::into ),
+			Sender::Unbounded{ tx, .. } => Pin::new( tx ).poll_ready( cx ).map_err( Into::into ),
 		}
 	}
 
-	#[ project ]
-	//
+
 	fn start_send( self: Pin<&mut Self>, item: Event ) -> Result<(), Self::Error>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.start_send( item ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.start_send( item ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } => Pin::new( tx ).start_send( item ).map_err( Into::into ),
+			Sender::Unbounded{ tx, .. } => Pin::new( tx ).start_send( item ).map_err( Into::into ),
 		}
 	}
 
-	/// This will do a send under the hood, so the same errors as from start_send can occur here.
+
+	// Note that on futures-rs bounded channels poll_flush has a problematic implementation.
+	// - it just calls poll_ready, which means it will be pending when the buffer is full. So
+	//   it will make SinkExt::send hang, bad!
+	// - it will swallow disconnected errors, so we don't get feedback allowing us to free slots.
 	//
-	#[ project ]
+	// In principle channels are always flushed, because when the message is in the buffer, it's
+	// ready for the reader to read. So this should just be a noop.
 	//
-	fn poll_flush( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
+	// We compensate for the error swallowing by checking `is_closed`.
+	//
+	fn poll_flush( self: Pin<&mut Self>, _cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.poll_flush( cx ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.poll_flush( cx ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } =>
+			{
+				if tx.is_closed() { Poll::Ready(Err( ErrorKind::Closed.into() ))}
+				else              { Poll::Ready(Ok ( ()                       ))}
+			}
+
+			Sender::Unbounded{ tx, .. } =>
+			{
+				if tx.is_closed() { Poll::Ready(Err( ErrorKind::Closed.into() ))}
+				else              { Poll::Ready(Ok ( ()                       ))}
+			}
 		}
 	}
 
-	#[ project ]
-	//
+
 	fn poll_close( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
-		#[ project ]
-		//
-		match self.project()
+		match self.get_mut()
 		{
-			Sender::Bounded  { tx, .. } => tx.poll_close( cx ).map_err( Into::into ),
-			Sender::Unbounded{ tx, .. } => tx.poll_close( cx ).map_err( Into::into ),
+			Sender::Bounded  { tx, .. } => Pin::new( tx ).poll_close( cx ).map_err( Into::into ),
+			Sender::Unbounded{ tx, .. } => Pin::new( tx ).poll_close( cx ).map_err( Into::into ),
 		}
 	}
 }

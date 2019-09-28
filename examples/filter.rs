@@ -16,7 +16,9 @@ struct Connection { pharos: Pharos<NetworkEvent> }
 
 impl Observable<NetworkEvent> for Connection
 {
-	fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Events<NetworkEvent>
+	type Error = pharos::Error;
+
+	fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Result< Events<NetworkEvent>, Self::Error >
 	{
 		 self.pharos.observe( options )
 	}
@@ -33,7 +35,7 @@ fn main()
 	// By creating the config object through into, other options will be defaults, notably here
 	// this will use unbounded channels.
 	//
-	let observer = conn.observe( filter.into() );
+	let observer = conn.observe( filter.into() ).expect( "observe" );
 
 	// Combine both options.
 	//

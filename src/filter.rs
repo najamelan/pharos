@@ -1,6 +1,8 @@
 use crate :: { import::* };
 
-/// Predicate for filtering events. This is an enum because closures that capture variables from
+/// Predicate for filtering events.
+///
+/// This is an enum because closures that capture variables from
 /// their environment need to be boxed. More often than not, an event will be a simple enum and
 /// the predicate will just match on the variant, so it would be wasteful to impose boxing in those
 /// cases, hence there is a function pointer variant which does not require boxing. This should
@@ -43,11 +45,11 @@ pub enum Filter<Event>
 	where Event: Clone + 'static + Send ,
 
 {
-	/// A function pointer to use to filter events.
+	/// A function pointer to a predicate to filter events.
 	//
 	Pointer( fn(&Event) -> bool ),
 
-	/// A boxed closure to use to filter events.
+	/// A boxed closure to a predicate to filter events.
 	//
 	Closure( Box<dyn FnMut(&Event) -> bool + Send> ),
 }
@@ -55,7 +57,7 @@ pub enum Filter<Event>
 
 impl<Event> Filter<Event>  where Event: Clone + 'static + Send
 {
-	/// Invoke the predicate
+	/// Invoke the predicate.
 	//
 	pub(crate) fn call( &mut self, evt: &Event ) -> bool
 	{
