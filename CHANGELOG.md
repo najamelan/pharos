@@ -1,5 +1,10 @@
 # Pharos Changelog
 
+## 0.4.1 - 2019-11-13
+
+- update dependencies to futures 0.3.1.
+- CI testing on stable rust.
+
 ## 0.4.0 - 2019-09-28
 
 - **BREAKING CHANGE**: The notify function had a sub optimal implemetation and did not allow notifying observers
