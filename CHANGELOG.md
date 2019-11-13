@@ -1,5 +1,9 @@
 # Pharos Changelog
 
+## 0.4.2 - 2019-11-13
+
+- drop dependency on log.
+
 ## 0.4.1 - 2019-11-13
 
 - update dependencies to futures 0.3.1.
