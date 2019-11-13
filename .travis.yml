@@ -29,30 +29,25 @@ matrix:
 
   include:
 
-    # This won't work because we use a nightly feature in dev-dependencies and the feature leaks:
-    #
-    # - rust  : stable
-    #   script: cargo check
-
     - os: linux
 
       script:
-        - cargo test --all-features
-        - cargo test --all-features --release
+        - cargo test
+        - cargo test --release
         - cargo doc --no-deps --all-features
 
 
     - os: osx
 
       script:
-        - cargo test --all-features
+        - cargo test
 
 
 
     - os: windows
 
       script:
-        - cargo test --all-features
+        - cargo test
 
 
 
