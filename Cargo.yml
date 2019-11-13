@@ -10,7 +10,7 @@ package:
   # - merge dev branch into master
   # - create git tag
   #
-  version       : 0.4.0
+  version       : 0.4.1
   name          : pharos
   authors       : [ Naja Melan <najamelan@autistici.org> ]
   edition       : '2018'
@@ -43,8 +43,11 @@ badges:
 
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha, features: [async-await] }
+  futures        : { version: ^0.3, default-features: false }
+  futures-channel: ^0.3
+  log            : ^0.4
 
 dev-dependencies:
 
+  futures       : ^0.3
   assert_matches: ^1

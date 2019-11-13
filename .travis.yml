@@ -1,5 +1,7 @@
 language: rust
-rust    : nightly
+rust    :
+  - stable
+  - nightly
 
 # Need to cache the whole `.cargo` directory to keep .crates.toml for
 # cargo-update to work

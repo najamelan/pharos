@@ -50,21 +50,19 @@ mod import
 	{
 		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name } ,
 		std            :: { task::{ Poll, Context }, pin::Pin                           } ,
+		futures        :: { Stream, Sink, ready                                         } ,
 
-		futures ::
+		futures_channel::mpsc::
 		{
-			Stream, Sink, ready,
-
-			channel::mpsc::
-			{
-				self                                      ,
-				Sender            as FutSender            ,
-				Receiver          as FutReceiver          ,
-				UnboundedSender   as FutUnboundedSender   ,
-				UnboundedReceiver as FutUnboundedReceiver ,
-				SendError         as FutSendError         ,
-			} ,
+			self                                      ,
+			Sender            as FutSender            ,
+			Receiver          as FutReceiver          ,
+			UnboundedSender   as FutUnboundedSender   ,
+			UnboundedReceiver as FutUnboundedReceiver ,
+			SendError         as FutSendError         ,
 		},
+
+		log::*,
 	};
 
 	#[ cfg( test ) ]
