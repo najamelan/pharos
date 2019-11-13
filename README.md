@@ -84,7 +84,8 @@ This crate only has one dependencies. Cargo will automatically handle it's depen
 ```yaml
 dependencies:
 
-  futures-preview: { version: ^0.3.0-alpha, features: [async-await, nightly] }
+  futures        : { version: ^0.3, default-features: false }
+  futures-channel: ^0.3
 ```
 
 ## Usage

@@ -61,8 +61,6 @@ mod import
 			UnboundedReceiver as FutUnboundedReceiver ,
 			SendError         as FutSendError         ,
 		},
-
-		log::*,
 	};
 
 	#[ cfg( test ) ]
