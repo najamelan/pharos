@@ -52,7 +52,7 @@ mod import
 		std            :: { task::{ Poll, Context }, pin::Pin                           } ,
 		futures        :: { Stream, Sink, ready                                         } ,
 
-		futures_channel::mpsc::
+		futures::channel::mpsc::
 		{
 			self                                      ,
 			Sender            as FutSender            ,

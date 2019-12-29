@@ -79,13 +79,12 @@ Please check out the [changelog](https://github.com/najamelan/pharos/blob/master
 
 ### Dependencies
 
-This crate only has one dependencies. Cargo will automatically handle it's dependencies for you.
+This crate only has but one dependency. Cargo will automatically handle it's dependencies for you.
 
 ```yaml
 dependencies:
 
-  futures        : { version: ^0.3, default-features: false }
-  futures-channel: ^0.3
+  futures: { version: ^0.3, default-features: false }
 ```
 
 ## Usage

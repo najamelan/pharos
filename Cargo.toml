@@ -7,8 +7,6 @@ status = "actively-developed"
 repository = "najamelan/pharos"
 
 [dependencies]
-futures-channel = "^0.3"
-
 [dependencies.futures]
 default-features = false
 version = "^0.3"

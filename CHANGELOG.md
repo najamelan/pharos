@@ -1,5 +1,10 @@
 # Pharos Changelog
 
+## 0.4.3 - 2019-??
+
+- no longer depend on futures-channel appart from the main futures lib. It's annoying if a dependant crate
+  want's to patch futures in Cargo.toml.
+
 ## 0.4.2 - 2019-11-13
 
 - drop dependency on log.
