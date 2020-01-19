@@ -225,7 +225,11 @@ fn main()
 {
    let mut conn = Connection{ pharos: Pharos::default() };
 
-   // We will only get close events.
+   // We will only get close events. Note that here we don't need access to any surrounding variables in
+   // the closure, so we can use a function pointer which avoids having to box the closure.
+   //
+   // Filter also has a variant `Closure` which allows you to pass in a `Box<dyn FnMut(&Event) -> bool + Send>`
+   // if you need access to surrounding context to make the decision.
    //
    let filter = Filter::Pointer( |e| e == &NetworkEvent::Closed );
 
