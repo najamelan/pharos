@@ -35,7 +35,7 @@ The main issue with this crate right now is the possibility for the observable t
 
 TODO: To mitigate these problems effectively, I will add a ring channel where the channel will only buffer a certain amount events and will overwrite the oldest event instead of blocking the sender when the buffer is full.
 
-This crate has: `#![ forbid( unsafe_code ) ]`
+This crate has: `#![ forbid( unsafe_code ) ]`, but it's dependency (futures library) uses a lot of unsafe code.
 
 
 ### Limitations
@@ -79,7 +79,7 @@ Please check out the [changelog](https://github.com/najamelan/pharos/blob/master
 
 ### Dependencies
 
-This crate only has but one dependency. Cargo will automatically handle it's dependencies for you.
+This crate only has but one dependency. Cargo will automatically handle it for you. This dependency contains `unsafe` code.
 
 ```yaml
 dependencies:

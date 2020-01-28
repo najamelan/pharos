@@ -34,17 +34,9 @@ pub struct Pharos<Event>  where Event: 'static + Clone + Send
 	//
 	observers : Vec<Option< Sender<Event> >>,
 	free_slots: Vec<usize>                  ,
-	state     : State                       ,
+	closed    : bool                        ,
 }
 
-
-#[ derive( Clone, Debug, PartialEq ) ]
-//
-enum State
-{
-	Ready,
-	Closed,
-}
 
 
 
@@ -73,7 +65,7 @@ impl<Event> Pharos<Event>  where Event: 'static + Clone + Send
 		{
 			observers : Vec::with_capacity( capacity ),
 			free_slots: Vec::with_capacity( capacity ),
-			state     : State::Ready                  ,
+			closed    : false                         ,
 		}
 	}
 
@@ -142,7 +134,7 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 	//
 	fn observe( &mut self, options: ObserveConfig<Event> ) -> Result< Events<Event>, Self::Error >
 	{
-		if self.state == State::Closed
+		if self.closed
 		{
 			return Err( ErrorKind::Closed.into() );
 		}
@@ -193,7 +185,7 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 	fn poll_ready( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
 
-		if self.state == State::Closed
+		if self.closed
 		{
 			return Err( ErrorKind::Closed.into() ).into();
 		}
@@ -224,7 +216,7 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 	fn start_send( self: Pin<&mut Self>, evt: Event ) -> Result<(), Self::Error>
 	{
 
-		if self.state == State::Closed
+		if self.closed
 		{
 			return Err( ErrorKind::Closed.into() );
 		}
@@ -271,7 +263,7 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 	fn poll_flush( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
 
-		if self.state == State::Closed
+		if self.closed
 		{
 			return Err( ErrorKind::Closed.into() ).into();
 		}
@@ -308,19 +300,18 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 
 
 
-	/// Will close and drop all observers. The pharos object will remain operational however.
-	/// The main annoyance would be that we'd have to make
+	/// Will close and drop all observers.
 	//
 	fn poll_close( mut self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
 	{
-		if self.state == State::Closed
+		if self.closed
 		{
 			return Ok(()).into();
 		}
 
 		else
 		{
-			self.state = State::Closed;
+			self.closed = true;
 		}
 
 
