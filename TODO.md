@@ -1,5 +1,7 @@
 # TODO
 
+- use matches! in docs and examples for filters.
+- should Pharos be Sync?
 - use NonZeroUsize as parameter in bounded channel
 - make Events clone? means we can only work with broadcast channels
 - switch to more performant channels (crossbeam). Will be easier once they provide an async api.
