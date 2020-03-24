@@ -6,6 +6,9 @@ status = "actively-developed"
 [badges.travis-ci]
 repository = "najamelan/pharos"
 
+[build-dependencies]
+rustc_version = "^0.2"
+
 [dependencies]
 [dependencies.futures]
 default-features = false
@@ -15,15 +18,13 @@ version = "^0.3"
 assert_matches = "^1"
 futures = "^0.3"
 
-[features]
-external_doc = []
-
 [package]
 authors = ["Naja Melan <najamelan@autistici.org>"]
 categories = ["asynchronous"]
 description = "Observer pattern which generates a futures 0.3 stream of events"
 documentation = "https://docs.rs/pharos"
 edition = "2018"
+exclude = ["tests", "examples", "ci", ".travis.yml", "TODO.md", "CONTRIBUTING.md"]
 keywords = ["observer", "futures", "stream", "broadcast", "publish_subscribe"]
 license = "Unlicense"
 name = "pharos"
@@ -35,3 +36,8 @@ version = "0.4.3"
 [package.metadata.docs]
 [package.metadata.docs.rs]
 all-features = true
+targets = []
+
+[profile]
+[profile.release]
+codegen-units = 1

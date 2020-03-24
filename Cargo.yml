@@ -21,18 +21,13 @@ package:
   description   : Observer pattern which generates a futures 0.3 stream of events
   categories    : [ asynchronous ]
   keywords      : [ observer, futures, stream, broadcast, publish_subscribe ]
+  exclude       : [ tests, examples, ci, .travis.yml, TODO.md, CONTRIBUTING.md ]
 
   metadata:
     docs:
       rs:
         all-features: true
-
-
-features:
-
-  # only used internally, don't use
-  #
-  external_doc: []
+        targets     : []
 
 
 badges:
@@ -45,7 +40,20 @@ dependencies:
 
   futures: { version: ^0.3, default-features: false }
 
+
 dev-dependencies:
 
   futures       : ^0.3
   assert_matches: ^1
+
+
+build-dependencies:
+
+  rustc_version: ^0.2
+
+
+profile:
+
+  release:
+
+    codegen-units: 1

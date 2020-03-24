@@ -1,7 +1,4 @@
 language: rust
-rust    :
-  - stable
-  - nightly
 
 # Need to cache the whole `.cargo` directory to keep .crates.toml for
 # cargo-update to work
@@ -17,6 +14,7 @@ before_cache:
   - rm -rf /home/travis/.cargo/git
   - rm -rf /home/travis/.cargo/registry
   - rm -rf /home/travis/.cargo/bin/wasm-pack
+  - rm -rf /home/travis/.cargo/bin/cargo-tarpaulin
 
 
 branches:
@@ -24,30 +22,41 @@ branches:
     - master
     - dev
 
-
-matrix:
+jobs:
 
   include:
 
-    - os: linux
+    - name  : linux stable check
+      os    : linux
+      rust  : stable
+      script: cargo check
+
+
+    - name  : linux nightly test everything
+      os    : linux
+      dist  : bionic
+      rust  : nightly
+
+      addons:
+        firefox: latest
+        apt:
+          packages:
+            - libssl-dev         # for cargo-tarpaulin
 
       script:
-        - cargo test
-        - cargo test --release
-        - cargo doc --no-deps --all-features
+        - bash ci/check.bash
+        - bash ci/test.bash
+        - bash ci/doc.bash
+        - bash ci/coverage.bash
 
 
-    - os: osx
-
+    - os    : osx
       script:
-        - cargo test
+        - bash ci/test.bash
 
 
-
-    - os: windows
-
+    - os    : windows
       script:
-        - cargo test
-
+        - bash ci/test.bash
 
 
