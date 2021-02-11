@@ -481,8 +481,8 @@ mod tests
 
 		let res = ph.observe( ObserveConfig::default() );
 
-		assert!   ( res.is_err() );
-		assert_eq!( ErrorKind::Closed, res.unwrap_err().kind() );
+			assert!   ( res.is_err() );
+			assert_eq!( ErrorKind::Closed, res.unwrap_err().kind() );
 	}
 
 
@@ -496,8 +496,8 @@ mod tests
 
 		let res = ph.observe( Channel::Bounded(0).into() );
 
-		assert!   ( res.is_err() );
-		assert_eq!( ErrorKind::MinChannelSizeOne, res.unwrap_err().kind() );
+			assert!   ( res.is_err() );
+			assert_eq!( ErrorKind::MinChannelSizeOne, res.unwrap_err().kind() );
 	}
 
 
@@ -517,14 +517,14 @@ mod tests
 
 			let mut ph = Pin::new( &mut ph );
 
-			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
-			assert!( ph.as_mut().start_send( true ).is_ok() );
+				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+				assert!( ph.as_mut().start_send( true ).is_ok() );
 
-			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Pending );
+				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Pending );
 
-			assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(true)));
+				assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(true)));
 
-			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 
 			().into()
 		}));
@@ -550,9 +550,10 @@ mod tests
 
 			drop( full );
 
-			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 
-			assert!( ph.observers[1].is_none() );
+				assert!( ph.observers[1].is_none() );
+
 			().into()
 		}));
 	}

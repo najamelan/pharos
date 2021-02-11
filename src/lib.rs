@@ -2,7 +2,6 @@
 #![ cfg_attr( nightly, doc    ( include = "../README.md" ) ) ]
 #![ doc = "" ] // empty doc line to handle missing doc warning when the feature is missing.
 
-
 #![ doc    ( html_root_url = "https://docs.rs/pharos" ) ]
 #![ deny   ( missing_docs                             ) ]
 #![ forbid ( unsafe_code                              ) ]
