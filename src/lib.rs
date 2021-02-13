@@ -37,7 +37,7 @@ pub use
 	filter       :: { Filter                             } ,
 	observable   :: { Observable, ObserveConfig, Channel } ,
 	events       :: { Events                             } ,
-	error        :: { Error, ErrorKind                   } ,
+	error        :: { PharErr, ErrorKind                 } ,
 };
 
 
@@ -46,8 +46,8 @@ mod import
 	pub(crate) use
 	{
 		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name } ,
-		std            :: { task::{ Poll, Context }, pin::Pin                           } ,
-		futures        :: { Stream, Sink, ready                                         } ,
+		std            :: { task::{ Poll, Context }, pin::Pin, future::Future           } ,
+		futures        :: { Stream, Sink, ready, future::FutureExt                      } ,
 
 		futures::channel::mpsc::
 		{
@@ -68,3 +68,10 @@ mod import
 		futures        :: { future::poll_fn, executor::block_on, SinkExt } ,
 	};
 }
+
+use import::*;
+
+
+/// A pinned boxed future returned by the Observable::observe method.
+//
+pub type Observe<'a, Event, Error> = Pin<Box< dyn Future< Output = Result<Events<Event>, Error> > + 'a >>;

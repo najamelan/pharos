@@ -150,44 +150,41 @@ enum GoddessEvent
 //
 impl Observable<GoddessEvent> for Goddess
 {
-   type Error = pharos::Error;
+   type Error = PharErr;
 
-   fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Result< Events<GoddessEvent>, Self::Error >
+   fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Observe< '_, GoddessEvent, Self::Error >
    {
       self.pharos.observe( options )
    }
 }
 
 
-fn main()
+#[ async_std::main ]
+//
+async fn main()
 {
-   let program = async move
-   {
-      let mut isis = Goddess::new();
+  let mut isis = Goddess::new();
 
-      // subscribe, the observe method takes options to let you choose:
-      // - channel type (bounded/unbounded)
-      // - a predicate to filter events
-      //
-      let mut events = isis.observe( Channel::Bounded( 3 ).into() ).expect( "observe" );
+  // subscribe, the observe method takes options to let you choose:
+  // - channel type (bounded/unbounded)
+  // - a predicate to filter events
+  //
+  let mut events = isis.observe( Channel::Bounded( 3 ).into() ).await.expect( "observe" );
 
-      // trigger an event
-      //
-      isis.sail().await;
+  // trigger an event
+  //
+  isis.sail().await;
 
-      // read from stream and let's put on the console what the event looks like.
-      //
-      let evt = dbg!( events.next().await.unwrap() );
+  // read from stream and let's put on the console what the event looks like.
+  //
+  let evt = dbg!( events.next().await.unwrap() );
 
-      // After this reads on the event stream will return None.
-      //
-      drop( isis );
+  // After this reads on the event stream will return None.
+  //
+  drop( isis );
 
-      assert_eq!( GoddessEvent::Sailing, evt );
-      assert_eq!( None, events.next().await );
-   };
-
-   block_on( program );
+  assert_eq!( GoddessEvent::Sailing, evt );
+  assert_eq!( None, events.next().await );
 }
 ```
 
@@ -214,15 +211,18 @@ struct Connection { pharos: Pharos<NetworkEvent> }
 
 impl Observable<NetworkEvent> for Connection
 {
-   type Error = pharos::Error;
+   type Error = PharErr;
 
-   fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Result< Events<NetworkEvent>, Self::Error >
+   fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Observe< '_, NetworkEvent, Self::Error >
    {
        self.pharos.observe( options )
    }
 }
 
-fn main()
+
+#[ async_std::main ]
+//
+async fn main()
 {
    let mut conn = Connection{ pharos: Pharos::default() };
 
@@ -237,7 +237,7 @@ fn main()
    // By creating the config object through into, other options will be defaults, notably here
    // this will use unbounded channels.
    //
-   let observer = conn.observe( filter.into() ).expect( "observe" );
+   let observer = conn.observe( filter.into() ).await.expect( "observe" );
 
    // Combine both options.
    //
@@ -246,7 +246,7 @@ fn main()
 
    // Get everything but close events over a bounded channel with queue size 5.
    //
-   let bounded_observer = conn.observe( opts );
+   let bounded_observer = conn.observe( opts ).await.expect( "observe" );
 }
 ```
 

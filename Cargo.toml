@@ -18,6 +18,10 @@ version = "^0.3"
 assert_matches = "^1"
 futures = "^0.3"
 
+[dev-dependencies.async-std]
+features = ["attributes"]
+version = "^1"
+
 [package]
 authors = ["Naja Melan <najamelan@autistici.org>"]
 categories = ["asynchronous"]

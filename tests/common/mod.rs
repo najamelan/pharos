@@ -83,9 +83,9 @@ pub struct NutEvent
 
 impl Observable<IsisEvent> for Goddess
 {
-	type Error = pharos::Error;
+	type Error = PharErr;
 
-	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Result< Events<IsisEvent>, Self::Error >
+	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Observe< '_, IsisEvent, Self::Error >
 	{
 		self.isis.observe( options )
 	}
@@ -94,9 +94,9 @@ impl Observable<IsisEvent> for Goddess
 
 impl Observable<NutEvent> for Goddess
 {
-	type Error = pharos::Error;
+	type Error = PharErr;
 
-	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Result< Events<NutEvent>, Self::Error >
+	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Observe< '_, NutEvent, Self::Error >
 	{
 		self.nut.observe( options )
 	}

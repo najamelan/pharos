@@ -1,4 +1,4 @@
-use crate :: { import::*, Filter, ObserveConfig, observable::Channel, Error, ErrorKind };
+use crate :: { import::*, Filter, ObserveConfig, observable::Channel, PharErr, ErrorKind };
 
 
 /// A stream of events. This is returned from [Observable::observe](crate::Observable::observe).
@@ -174,7 +174,7 @@ impl<Event> Stream for Receiver<Event> where Event: Clone + 'static + Send
 
 impl<Event> Sink<Event> for Sender<Event> where Event: Clone + 'static + Send
 {
-	type Error = Error;
+	type Error = PharErr;
 
 
 	fn poll_ready( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>

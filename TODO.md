@@ -18,3 +18,13 @@
 - allow other channel types, like a ringchannel which drops messages on outpacing? To prevent DDOS and OOM attacks?
 
 
+# Rewrite goals:
+
+- possibility to write to the same pharos object from different async tasks. Right now it requires mut and mutexes and refcells shouldn't be held accross await points.
+
+- Events to be clone so something that is observing can clone it's stream and give it to some other object/task. Or make Events Observable itself?
+
+- be channel agnostic?
+
+Sending out to observers is async and provides back pressure. Other sends and adding observers requires that we are not in the middle of sending out.
+

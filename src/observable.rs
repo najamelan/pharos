@@ -1,4 +1,4 @@
-use crate :: { Filter, Events };
+use crate :: { Filter, Observe };
 
 /// Indicate that a type is observable. You can call [`observe`](Observable::observe) to get a
 /// stream of events.
@@ -47,11 +47,11 @@ use crate :: { Filter, Events };
 ///
 /// impl Observable<Steps> for Foo
 /// {
-///    type Error = pharos::Error;
+///    type Error = PharErr;
 ///
 ///    // Pharos implements observable, so we just forward the call.
 ///    //
-///    fn observe( &mut self, options: ObserveConfig<Steps> ) -> Result< Events<Steps>, Self::Error >
+///    fn observe( &mut self, options: ObserveConfig<Steps> ) -> Observe< '_, Steps, Self::Error>
 ///    {
 ///       self.pharos.observe( options )
 ///    }
@@ -63,7 +63,7 @@ use crate :: { Filter, Events };
 /// async fn task()
 /// {
 ///    let mut foo    = Foo { pharos: Pharos::default() };
-///    let mut errors = foo.observe( Filter::Pointer( Steps::is_err ).into() ).expect( "observe" );
+///    let mut errors = foo.observe( Filter::Pointer( Steps::is_err ).into() ).await.expect( "observe" );
 ///
 ///    // will only be notified on errors thanks to the filter.
 ///    //
@@ -91,7 +91,7 @@ pub trait Observable<Event>
    /// Add an observer to the observable. Options allow chosing the channel type and
    /// to filter events with a predicate.
    //
-   fn observe( &mut self, options: ObserveConfig<Event> ) -> Result<Events<Event>, Self::Error>;
+   fn observe( &mut self, options: ObserveConfig<Event> ) -> Observe<'_, Event, Self::Error >;
 }
 
 

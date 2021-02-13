@@ -1,4 +1,4 @@
-use crate :: { import::*, Observable, Events, ObserveConfig, events::Sender, Error, ErrorKind, Channel };
+use crate :: { import::*, Observable, Observe, Events, ObserveConfig, events::Sender, PharErr, ErrorKind, Channel };
 
 
 /// The Pharos lighthouse. When you implement [Observable] on your type, you can forward
@@ -125,51 +125,55 @@ impl<Event> Default for Pharos<Event>  where Event: 'static + Clone + Send
 
 impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + Send
 {
-	type Error = Error;
+	type Error = PharErr;
 
 	/// Will re-use slots from disconnected observers to avoid growing to much.
 	///
 	/// TODO: provide API for the client to compact the pharos object after reducing the
 	///       number of observers.
 	//
-	fn observe( &mut self, options: ObserveConfig<Event> ) -> Result< Events<Event>, Self::Error >
+	fn observe( &mut self, options: ObserveConfig<Event> ) -> Observe<'_, Event, Self::Error >
 	{
-		if self.closed
+		async move
 		{
-			return Err( ErrorKind::Closed.into() );
-		}
-
-
-		match options.channel
-		{
-			Channel::Bounded(queue_size) =>
+			if self.closed
 			{
-				if queue_size < 1
-				{
-					return Err( ErrorKind::MinChannelSizeOne.into() );
-				}
+				return Err( ErrorKind::Closed.into() );
 			}
 
-			_ => {}
-		}
+
+			match options.channel
+			{
+				Channel::Bounded(queue_size) =>
+				{
+					if queue_size < 1
+					{
+						return Err( ErrorKind::MinChannelSizeOne.into() );
+					}
+				}
+
+				_ => {}
+			}
 
 
-		let (events, sender) = Events::new( options );
+			let (events, sender) = Events::new( options );
 
 
-		// Try to reuse a free slot
-		//
-		if let Some( i ) = self.free_slots.pop()
-		{
-			self.observers[i] = Some( sender );
-		}
+			// Try to reuse a free slot
+			//
+			if let Some( i ) = self.free_slots.pop()
+			{
+				self.observers[i] = Some( sender );
+			}
 
-		else
-		{
-			self.observers.push( Some( sender ) );
-		}
+			else
+			{
+				self.observers.push( Some( sender ) );
+			}
 
-		Ok( events )
+			Ok( events )
+
+		}.boxed()
 	}
 }
 
@@ -179,7 +183,7 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 //
 impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 {
-	type Error = Error;
+	type Error = PharErr;
 
 
 	fn poll_ready( self: Pin<&mut Self>, cx: &mut Context<'_> ) -> Poll<Result<(), Self::Error>>
@@ -203,6 +207,8 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 				//
 				if res.is_err()
 				{
+					// TODO: why don't we add to free_slots here like below?
+					//
 					*obs = None;
 				}
 			}
@@ -392,9 +398,9 @@ mod tests
 
 	// verify storage_len and num_observers
 	//
-	#[test]
+	#[async_std::test]
 	//
-	fn storage_len()
+	async fn storage_len()
 	{
 		let mut ph = Pharos::<bool>::default();
 
@@ -402,13 +408,13 @@ mod tests
 			assert_eq!( ph.num_observers (), 0 );
 			assert_eq!( ph.free_slots.len(), 0 );
 
-		let mut a = ph.observe( ObserveConfig::default() ).expect( "observe" );
+		let mut a = ph.observe( ObserveConfig::default() ).await.expect( "observe" );
 
 			assert_eq!( ph.storage_len   (), 1 );
 			assert_eq!( ph.num_observers (), 1 );
 			assert_eq!( ph.free_slots.len(), 0 );
 
-		let b = ph.observe( ObserveConfig::default() ).expect( "observe" );
+		let b = ph.observe( ObserveConfig::default() ).await.expect( "observe" );
 
 			assert_eq!( ph.storage_len   (), 2 );
 			assert_eq!( ph.num_observers (), 2 );
@@ -430,14 +436,14 @@ mod tests
 
 	// observe: Make sure we are reusing slots
 	//
-	#[test]
+	#[async_std::test]
 	//
-	fn reuse()
+	async fn reuse()
 	{
 		let mut ph = Pharos::<bool>::default();
-		let _a = ph.observe( ObserveConfig::default() );
-		let  b = ph.observe( ObserveConfig::default() );
-		let _c = ph.observe( ObserveConfig::default() );
+		let _a = ph.observe( ObserveConfig::default() ).await;
+		let  b = ph.observe( ObserveConfig::default() ).await;
+		let _c = ph.observe( ObserveConfig::default() ).await;
 
 			assert_eq!( ph.storage_len  (), 3 );
 			assert_eq!( ph.num_observers(), 3 );
@@ -453,13 +459,13 @@ mod tests
 			assert_eq!( &ph.free_slots, &[1] );
 
 
-		let _d = ph.observe( ObserveConfig::default() );
+		let _d = ph.observe( ObserveConfig::default() ).await;
 
 			assert_eq!( ph.storage_len   (), 3 );
 			assert_eq!( ph.num_observers (), 3 );
 			assert_eq!( ph.free_slots.len(), 0 );
 
-		let _e = ph.observe( ObserveConfig::default() );
+		let _e = ph.observe( ObserveConfig::default() ).await;
 
 			// Now we should have pushed again
 			//
@@ -471,15 +477,15 @@ mod tests
 
 	// observe: verify we can no longer observe after calling close
 	//
-	#[test]
+	#[async_std::test]
 	//
-	fn observe_after_close()
+	async fn observe_after_close()
 	{
 		let mut ph = Pharos::<bool>::default();
 
 		block_on( ph.close() ).expect( "close" );
 
-		let res = ph.observe( ObserveConfig::default() );
+		let res = ph.observe( ObserveConfig::default() ).await;
 
 			assert!   ( res.is_err() );
 			assert_eq!( ErrorKind::Closed, res.unwrap_err().kind() );
@@ -488,13 +494,13 @@ mod tests
 
 	// observe: refuse Channel::Bounded(0)
 	//
-	#[test]
+	#[async_std::test]
 	//
-	fn observe_refuse_zero()
+	async fn observe_refuse_zero()
 	{
 		let mut ph = Pharos::<bool>::default();
 
-		let res = ph.observe( Channel::Bounded(0).into() );
+		let res = ph.observe( Channel::Bounded(0).into() ).await;
 
 			assert!   ( res.is_err() );
 			assert_eq!( ErrorKind::MinChannelSizeOne, res.unwrap_err().kind() );
@@ -503,18 +509,18 @@ mod tests
 
 	// verify that one observer blocks pharos.
 	//
-	#[ test ]
+	#[async_std::test]
 	//
-	fn poll_ready_pending()
+	async fn poll_ready_pending()
 	{
-		block_on( poll_fn( move |mut cx|
+		let mut ph = Pharos::default();
+
+		let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).await.expect( "observe" );
+		let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).await.expect( "observe" );
+		let _unbound = ph.observe( Channel::Unbounded      .into() ).await.expect( "observe" );
+
+		poll_fn( move |mut cx|
 		{
-			let mut ph = Pharos::default();
-
-			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
-			let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
-			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
-
 			let mut ph = Pin::new( &mut ph );
 
 				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
@@ -527,35 +533,38 @@ mod tests
 				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 
 			().into()
-		}));
+
+		}).await;
 	}
 
 
 
 	// pharos drops closed observers.
 	//
-	#[ test ]
+	#[async_std::test]
 	//
-	fn poll_ready_drop()
+	async fn poll_ready_drop()
 	{
-		block_on( poll_fn( move |mut cx|
+		let mut ph = Pharos::<bool>::default();
+
+		let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).await.expect( "observe" );
+		let full     = ph.observe( Channel::Bounded  ( 1  ).into() ).await.expect( "observe" );
+		let _unbound = ph.observe( Channel::Unbounded      .into() ).await.expect( "observe" );
+
+		let mut ph = Pin::new( &mut ph );
+
+		drop( full );
+
+
+		poll_fn( move |mut cx|
 		{
-			let mut ph = Pharos::<bool>::default();
+			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 
-			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
-			let full     = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
-			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
-
-			let mut ph = Pin::new( &mut ph );
-
-			drop( full );
-
-				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
-
-				assert!( ph.observers[1].is_none() );
+			assert!( ph.observers[1].is_none() );
 
 			().into()
-		}));
+
+		}).await;
 	}
 
 
@@ -593,18 +602,18 @@ mod tests
 
 	// start_send verify message arrives.
 	//
-	#[ test ]
+	#[async_std::test]
 	//
-	fn start_send_arrive()
+	async fn start_send_arrive()
 	{
-		block_on( poll_fn( move |mut cx|
+		let mut ph = Pharos::<usize>::default();
+
+		let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).await.expect( "observe" );
+		let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).await.expect( "observe" );
+		let _unbound = ph.observe( Channel::Unbounded      .into() ).await.expect( "observe" );
+
+		poll_fn( move |mut cx|
 		{
-			let mut ph = Pharos::default();
-
-			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
-			let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
-			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
-
 			let mut ph = Pin::new( &mut ph );
 
 			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
@@ -613,34 +622,36 @@ mod tests
 			assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(3)));
 
 			().into()
-		}));
+
+		}).await;
 	}
 
 
 
 	// pharos drops closed observers.
 	//
-	#[ test ]
+	#[async_std::test]
 	//
-	fn poll_flush_drop()
+	async fn poll_flush_drop()
 	{
-		block_on( poll_fn( move |mut cx|
+		let mut ph = Pharos::<bool>::default();
+
+		let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).await.expect( "observe" );
+		let full     = ph.observe( Channel::Bounded  ( 1  ).into() ).await.expect( "observe" );
+		let _unbound = ph.observe( Channel::Unbounded      .into() ).await.expect( "observe" );
+
+		let mut ph = Pin::new( &mut ph );
+
+		drop( full );
+
+		poll_fn( move |mut cx|
 		{
-			let mut ph = Pharos::<bool>::default();
-
-			let _open    = ph.observe( Channel::Bounded  ( 10 ).into() ).expect( "observe" );
-			let full     = ph.observe( Channel::Bounded  ( 1  ).into() ).expect( "observe" );
-			let _unbound = ph.observe( Channel::Unbounded      .into() ).expect( "observe" );
-
-			let mut ph = Pin::new( &mut ph );
-
-			drop( full );
-
 			assert_matches!( ph.as_mut().poll_flush( &mut cx ), Poll::Ready( Ok(_) ) );
 
 			assert!( ph.observers[1].is_none() );
 			().into()
-		}));
+
+		}).await;
 	}
 
 

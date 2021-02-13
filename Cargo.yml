@@ -59,6 +59,7 @@ dev-dependencies:
 
   futures       : ^0.3
   assert_matches: ^1
+  async-std     : { version: ^1, features: [attributes] }
 
 
 build-dependencies:
