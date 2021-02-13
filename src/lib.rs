@@ -23,11 +23,12 @@
 )]
 
 
-mod error      ;
-mod events     ;
-mod observable ;
-mod pharos     ;
-mod filter     ;
+mod error         ;
+mod events        ;
+mod observable    ;
+mod pharos        ;
+mod filter        ;
+mod shared_pharos ;
 
 
 
@@ -38,6 +39,7 @@ pub use
 	observable   :: { Observable, ObserveConfig, Channel } ,
 	events       :: { Events                             } ,
 	error        :: { PharErr, ErrorKind                 } ,
+	shared_pharos:: { SharedPharos                       } ,
 };
 
 
@@ -45,9 +47,9 @@ mod import
 {
 	pub(crate) use
 	{
-		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name } ,
-		std            :: { task::{ Poll, Context }, pin::Pin, future::Future           } ,
-		futures        :: { Stream, Sink, ready, future::FutureExt                      } ,
+		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name  } ,
+		std            :: { task::{ Poll, Context }, pin::Pin, future::Future            } ,
+		futures        :: { Stream, Sink, SinkExt, ready, future::FutureExt, lock::Mutex } ,
 
 		futures::channel::mpsc::
 		{
@@ -64,8 +66,8 @@ mod import
 	//
 	pub(crate) use
 	{
-		assert_matches :: { assert_matches                               } ,
-		futures        :: { future::poll_fn, executor::block_on, SinkExt } ,
+		assert_matches :: { assert_matches                      } ,
+		futures        :: { future::poll_fn, executor::block_on } ,
 	};
 }
 
@@ -74,4 +76,4 @@ use import::*;
 
 /// A pinned boxed future returned by the Observable::observe method.
 //
-pub type Observe<'a, Event, Error> = Pin<Box< dyn Future< Output = Result<Events<Event>, Error> > + 'a >>;
+pub type Observe<'a, Event, Error> = Pin<Box< dyn Future< Output = Result<Events<Event>, Error> > + 'a + Send >>;
