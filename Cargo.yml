@@ -24,7 +24,7 @@ package:
   # - `git tag x.x.x` with version number.
   # - `git push && git push --tags`
   #
-  version       : 0.4.3
+  version       : 0.5.0
   name          : pharos
   authors       : [ Naja Melan <najamelan@autistici.org> ]
   edition       : '2018'

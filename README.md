@@ -44,10 +44,7 @@ This crate has: `#![ forbid( unsafe_code ) ]`, but it's dependency (futures libr
 - only bounded and unbounded channel as back-end (for now)
 - [`Events`] is not clonable right now (would require support from the channels we use as back-ends, eg. broadcast type channel)
 - performance tweaking still needs to be done
-- pharos requires mut access for most operations. This is not intended to change anytime soon. Both on
-  [send](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.18/futures_util/sink/trait.SinkExt.html#method.send) and [observe](Observable::observe), the two main interfaces, manipulate internal
-  state, and most channels also require mutable access to either read or write. If you need it from immutable
-  context, use interior mutability primitives like locks or Cells...
+
 
 ### Future work
 
@@ -63,14 +60,14 @@ With [cargo yaml](https://gitlab.com/storedbox/cargo-yaml):
 ```yaml
 dependencies:
 
-  pharos: ^0.4
+  pharos: ^0.5
 ```
 
 With raw Cargo.toml
 ```toml
 [dependencies]
 
-   pharos = "0.4"
+   pharos = "0.5"
 ```
 
 ### Upgrade
@@ -96,6 +93,8 @@ dependencies:
 Whenever observers want to unsubscribe, they can just drop the stream or call `close` on it. If you are an observable and you want to notify observers that no more messages will follow, just drop the pharos object. Failing that, create an event type that signifies EOF and send that to observers.
 
 Your event type will be cloned once for each observer, so you might want to put it in an Arc if it's bigger than 2 pointer sizes (eg. there's no point putting an enum without data in an Arc).
+
+When you need to notify a pharos object from several async tasks, you can use [`SharedPharos`]. This type allows observing and notifying with a shared reference and handles synchronyzation internally.
 
 Examples can be found in the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory. Here is the most basic one:
 
