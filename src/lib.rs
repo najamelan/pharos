@@ -48,7 +48,7 @@ mod import
 	pub(crate) use
 	{
 		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name  } ,
-		std            :: { task::{ Poll, Context }, pin::Pin, future::Future            } ,
+		std            :: { task::{ Poll, Context }, pin::Pin, future::Future, sync::Arc } ,
 		futures        :: { Stream, Sink, SinkExt, ready, future::FutureExt, lock::Mutex } ,
 
 		futures::channel::mpsc::

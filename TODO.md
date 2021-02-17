@@ -20,7 +20,6 @@
 
 # Rewrite goals:
 
-- possibility to write to the same pharos object from different async tasks. Right now it requires mut and mutexes and refcells shouldn't be held accross await points.
 
 - Events to be clone so something that is observing can clone it's stream and give it to some other object/task. Or make Events Observable itself?
 

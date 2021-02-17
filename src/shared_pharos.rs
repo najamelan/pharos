@@ -4,11 +4,11 @@ use crate::{ import::*, Pharos, PharErr, Observable, Observe, ObserveConfig, Eve
 /// A handy wrapper that uses a futures aware mutex to allow using Pharos from a shared
 /// reference.
 //
-#[ derive( Debug ) ]
+#[ derive( Debug, Clone ) ]
 //
 pub struct SharedPharos<Event> where Event: 'static + Clone + Send
 {
-	pharos: Mutex< Pharos<Event> >,
+	pharos: Arc<Mutex< Pharos<Event> >>,
 }
 
 
@@ -18,7 +18,7 @@ impl<Event> SharedPharos<Event> where Event: 'static + Clone + Send
 	//
 	pub fn new( pharos: Pharos<Event> ) -> Self
 	{
-		Self{ pharos: Mutex::new( pharos ) }
+		Self{ pharos: Arc::new(Mutex::new( pharos )) }
 	}
 
 
@@ -34,11 +34,23 @@ impl<Event> SharedPharos<Event> where Event: 'static + Clone + Send
 
 	/// Start Observing this Pharos object.
 	//
-	pub async fn observe( &self, options: ObserveConfig<Event> ) -> Result<Events<Event>, <Self as Observable<Event>>::Error >
+	pub async fn observe_shared( &self, options: ObserveConfig<Event> ) -> Result<Events<Event>, <Self as Observable<Event>>::Error >
 	{
 		let mut ph = self.pharos.lock().await;
 
 		ph.observe( options ).await
+	}
+}
+
+
+impl<Event> Default for SharedPharos<Event>
+
+	where Event: 'static + Clone + Send
+
+{
+	fn default() -> Self
+	{
+		Self::new( Pharos::default() )
 	}
 }
 
@@ -51,6 +63,6 @@ impl<Event> Observable<Event> for SharedPharos<Event>
 
 	fn observe( &mut self, options: ObserveConfig<Event> ) -> Observe< '_, Event, Self::Error >
 	{
-		SharedPharos::observe( self, options ).boxed()
+		self.observe_shared( options ).boxed()
 	}
 }

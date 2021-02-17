@@ -1,13 +1,13 @@
 // Tested:
 //
-// - ✔ basic functionality
-// - ✔ test closing senders/receivers?
-// - ✔ send events of 2 types from one object + something other than an enum without data
-// - ✔ accross threads
+// ✔ basic functionality
+// ✔ test closing senders/receivers?
+// ✔ send events of 2 types from one object + something other than an enum without data
+// ✔ accross threads
 // - TODO: test that sender task blocks when observer falls behind (see comments below)
-// - ✔ Basic filter usage, only one event type should be returned.
-// - ✔ A filter that always returns true should get all events.
-// - ✔ A filter that always returns false should not get any events.
+// ✔ Basic filter usage, only one event type should be returned.
+// ✔ A filter that always returns true should get all events.
+// ✔ A filter that always returns false should not get any events.
 //
 mod common;
 

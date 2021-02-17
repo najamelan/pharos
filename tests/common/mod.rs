@@ -102,3 +102,61 @@ impl Observable<NutEvent> for Goddess
 	}
 }
 
+
+
+
+
+
+
+
+pub struct Shared
+{
+	ph : SharedPharos<SharedEvent>,
+}
+
+
+impl Shared
+{
+	pub fn new() -> Self
+	{
+		Self
+		{
+			ph: SharedPharos::default(),
+		}
+	}
+
+
+	pub fn start( &mut self )
+	{
+		for _ in 0..4
+		{
+			let ph = self.ph.clone();
+
+			async_std::task::spawn( async move
+			{
+				ph.notify( SharedEvent{ time: "test".into() } ).await.expect( "notify" );
+
+			});
+		}
+	}
+}
+
+
+
+#[ derive( Clone, Debug, PartialEq ) ]
+//
+pub struct SharedEvent
+{
+	pub time: Arc<str>
+}
+
+
+impl Observable<SharedEvent> for Shared
+{
+	type Error = PharErr;
+
+	fn observe( &mut self, options: ObserveConfig<SharedEvent> ) -> Observe< '_, SharedEvent, Self::Error >
+	{
+		self.ph.observe( options )
+	}
+}
