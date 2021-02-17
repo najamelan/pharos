@@ -1,99 +1,71 @@
-name: Rust
-
-
-on:
-  push:
-    branches:
-      - master
-      - dev
-
-  pull_request:
-    branches:
-      - master
-      - dev
-
+name: ci
+on  : [push, pull_request]
 
 jobs:
 
-  linux-ci:
+  linux-stable:
 
+    name: Linux Rust Stable
     runs-on: ubuntu-latest
 
     steps:
 
-      - uses: actions/checkout@v1
+      - name: Install latest stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+            components: clippy
 
-      - name: Install rust nightly
+      - name: Install nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
 
-        run : |
-          rustup toolchain add nightly
-          rustup default nightly
 
-      - name: Build
-        run : cargo build  --all-features
+      - name: Checkout crate
+        uses: actions/checkout@v2
 
       - name: Run tests
-        run : cargo test  --all-features
-
-      - name: Build --release
-        run: cargo build  --all-features --release
-
-      - name: Run tests --release
-        run: cargo test  --all-features --release
-
-      - name: Build docs
-        run : cargo doc --no-deps --all-features
-
-      # doesn't work on nightly until rustup can install the latest nightly which has clippy.
-      #
-      # - name: Run clippy
-      #   run : cargo +stable clippy --all-features
+        run: bash ci/test.bash
 
 
-  windows-ci:
+  linux-nightly:
 
-    runs-on: windows-latest
+    name: Linux Rust Nightly
+    runs-on: ubuntu-latest
 
     steps:
 
-      - uses: actions/checkout@v1
+      - name: Install latest nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: clippy
 
-      - name: Install rust nightly
 
-        run : |
-          rustup toolchain add nightly
-          rustup default nightly
+      - name: Checkout crate
+        uses: actions/checkout@v2
 
-      - name: Build
-        run : cargo build  --all-features
 
       - name: Run tests
-        run : cargo test  --all-features
+        run : bash ci/test.bash
 
 
-  macos-ci:
+      - name: Run clippy
+        run : bash ci/clippy.bash
 
-    runs-on: macOS-latest
 
-    steps:
+      - name: Build documentation
+        run : bash ci/doc.bash
 
-      - uses: actions/checkout@v1
 
-      - name: Install rust nightly
+      - name: Check coverage
+        run: bash ci/coverage.bash
 
-        run : |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh && sh rustup.sh -y
-          source $HOME/.cargo/env
-          rustup toolchain add nightly
-          rustup default nightly
 
-      - name: Build
-        run : |
-          source $HOME/.cargo/env
-          cargo build  --all-features
+      - name: Run tests on wasm
+        run: bash ci/wasm.bash
 
-      - name: Run tests
-        run : |
-          source $HOME/.cargo/env
-          cargo test  --all-features
 
