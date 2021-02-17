@@ -6,14 +6,16 @@ pub mod import
 	//
 	pub(crate) use
 	{
-		pharos :: { *                                                    } ,
-		std    :: { sync::Arc, thread, task::{ Context, Poll }, pin::Pin } ,
+		pharos          :: { *                                                    } ,
+		std             :: { sync::Arc, thread, task::{ Context, Poll }, pin::Pin } ,
+		async_executors :: AsyncStd ,
 
 		futures ::
 		{
 			channel::mpsc :: Receiver                   ,
 			channel::mpsc :: UnboundedReceiver          ,
 			executor      :: block_on                   ,
+			task          :: { Spawn, SpawnExt }        ,
 			stream        :: Stream, StreamExt, SinkExt ,
 			sink          :: Sink                       ,
 			future        :: poll_fn                    ,
@@ -126,17 +128,17 @@ impl Shared
 	}
 
 
-	pub fn start( &mut self )
+	pub fn start( &mut self, exec: impl Spawn )
 	{
 		for _ in 0..4
 		{
 			let ph = self.ph.clone();
 
-			async_std::task::spawn( async move
+			exec.spawn( async move
 			{
 				ph.notify( SharedEvent{ time: "test".into() } ).await.expect( "notify" );
 
-			});
+			}).expect( "spawn" );
 		}
 	}
 }

@@ -6,15 +6,19 @@
 //   actually doing something.
 //
 //
-mod common;
+#![cfg(target_arch = "wasm32")]
 
+use wasm_bindgen_test::*;
+
+wasm_bindgen_test_configure!(run_in_browser);
+
+mod common;
 use common::{ *, import::* };
 
 
-
-#[ async_std::test ]
+#[ wasm_bindgen_test ]
 //
-async fn basic()
+async fn basic_wasm()
 {
 	let mut shared = Shared::new();
 	let mut events = shared.observe( Channel::Bounded( 1 ).into() ).await.expect( "observe" );
@@ -29,4 +33,3 @@ async fn basic()
 
 	assert_eq!( None, events.next().await );
 }
-
