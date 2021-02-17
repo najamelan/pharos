@@ -46,6 +46,7 @@ impl From<FutSendError> for PharErr
 
 /// The different kind of errors that can happen when you use the `pharos` API.
 //
+#[ non_exhaustive ]
 #[ derive( Debug, Copy, Clone, PartialEq, Eq ) ]
 //
 pub enum ErrorKind
@@ -64,10 +65,6 @@ pub enum ErrorKind
 	/// The minimum valid buffer size for [`Channel::Bounded`](crate::observable::Channel) is `1`, you sent in `0`.
 	//
 	MinChannelSizeOne,
-
-	#[ doc( hidden ) ]
-	//
-	__NonExhaustive__
 }
 
 
@@ -93,6 +90,10 @@ impl ErrorTrait for PharErr
 {
 	fn source( &self ) -> Option< &(dyn ErrorTrait + 'static) >
 	{
+		// Somehow using as_deref gives us thread bound problems...
+		//
+		#[ allow( clippy::option_as_ref_deref ) ]
+		//
 		self.inner.as_ref().map( |e| -> &(dyn ErrorTrait + 'static) { e.deref() } )
 	}
 }

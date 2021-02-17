@@ -142,17 +142,12 @@ impl<Event> Observable<Event> for Pharos<Event>  where Event: 'static + Clone + 
 			}
 
 
-			match options.channel
+			if let Channel::Bounded(queue_size) = options.channel
 			{
-				Channel::Bounded(queue_size) =>
+				if queue_size < 1
 				{
-					if queue_size < 1
-					{
-						return Err( ErrorKind::MinChannelSizeOne.into() );
-					}
+					return Err( ErrorKind::MinChannelSizeOne.into() );
 				}
-
-				_ => {}
 			}
 
 
@@ -589,8 +584,8 @@ mod tests
 
 				match res
 				{
-					Poll::Ready( Err( e ) ) => assert_eq!( ErrorKind::Closed, e.kind() ),
-					_                       => assert!( false, "wrong result " ),
+					Poll::Ready( Err( e ) ) => assert_eq!( ErrorKind::Closed, e.kind() ) ,
+					_                       => unreachable!( "wrong result " )           ,
 				}
 
 			().into()

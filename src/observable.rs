@@ -250,8 +250,10 @@ impl<Event> From<Filter<Event>> for ObserveConfig<Event> where Event: Clone + 's
 {
    fn from( filter: Filter<Event> ) -> Self
    {
-      let mut s = Self::default();
-      s.filter = Some( filter );
-      s
+      Self
+      {
+         filter: Some(filter),
+         ..Self::default()
+      }
    }
 }
