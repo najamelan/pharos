@@ -1,5 +1,18 @@
 # Pharos Changelog
 
+## 0.5.0 - 2020-02-17
+
+- **BREAKING CHANGE**: `Observable::observe` is now an async function. This was needed to make it possible to send
+  events to a pharos object from different async tasks. So far notifying was async, but observing was not. However
+  in order to be able to use a mutex, we need both operations to be one or the other. On wasm, one cannot block the
+  thread hence the choice for an async mutex, but in order to lock that we have to be in async context.
+  A new helper type `SharedPharos` has been introduced to conveniently use pharos from a shared reference.
+- **BREAKING CHANGE**: rename `pharos::Error` to `PharErr`. I want to move away from types that are just called `Error`.
+  This allows conveniently exporting the error type at crate level.
+- no longer depend on futures-channel appart from the main futures lib. It's annoying if a dependant crate
+  want's to patch futures in Cargo.toml.
+- move to github actions after travis becomes a paid service.
+
 ## 0.4.2 - 2019-11-13
 
 - drop dependency on log.

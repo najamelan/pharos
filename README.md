@@ -3,7 +3,8 @@
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 [![Build Status](https://api.travis-ci.org/najamelan/pharos.svg?branch=master)](https://travis-ci.org/najamelan/pharos)
 [![Docs](https://docs.rs/pharos/badge.svg)](https://docs.rs/pharos)
-![crates.io](https://img.shields.io/crates/v/pharos.svg)
+[![Crates.io](https://img.shields.io/crates/v/pharos)](https://crates.io/crates/pharos)
+[![Crates.io downloads](https://img.shields.io/crates/d/pharos)](https://crates.io/crates/pharos)
 
 > An introduction to pharos is available in many formats: [video](https://youtu.be/BAzsxW-nxh8), [wikipedia](https://en.wikipedia.org/wiki/Lighthouse_of_Alexandria) and it was even honored by many artists like [this painting by Micheal Turner](http://omeka.wustl.edu/omeka/files/original/2694d12580166e77d40afd37b492a78e.jpg).
 
@@ -35,7 +36,7 @@ The main issue with this crate right now is the possibility for the observable t
 
 TODO: To mitigate these problems effectively, I will add a ring channel where the channel will only buffer a certain amount events and will overwrite the oldest event instead of blocking the sender when the buffer is full.
 
-This crate has: `#![ forbid( unsafe_code ) ]`
+This crate has: `#![ forbid( unsafe_code ) ]`, but it's dependency (futures library) uses a lot of unsafe code.
 
 
 ### Limitations
@@ -43,10 +44,7 @@ This crate has: `#![ forbid( unsafe_code ) ]`
 - only bounded and unbounded channel as back-end (for now)
 - [`Events`] is not clonable right now (would require support from the channels we use as back-ends, eg. broadcast type channel)
 - performance tweaking still needs to be done
-- pharos requires mut access for most operations. This is not intended to change anytime soon. Both on
-  [send](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.18/futures_util/sink/trait.SinkExt.html#method.send) and [observe](Observable::observe), the two main interfaces, manipulate internal
-  state, and most channels also require mutable access to either read or write. If you need it from immutable
-  context, use interior mutability primitives like locks or Cells...
+
 
 ### Future work
 
@@ -62,14 +60,14 @@ With [cargo yaml](https://gitlab.com/storedbox/cargo-yaml):
 ```yaml
 dependencies:
 
-  pharos: ^0.4
+  pharos: ^0.5
 ```
 
 With raw Cargo.toml
 ```toml
 [dependencies]
 
-   pharos = "0.4"
+   pharos = "0.5"
 ```
 
 ### Upgrade
@@ -79,13 +77,12 @@ Please check out the [changelog](https://github.com/najamelan/pharos/blob/master
 
 ### Dependencies
 
-This crate only has one dependencies. Cargo will automatically handle it's dependencies for you.
+This crate only has but one dependency. Cargo will automatically handle it for you. This dependency contains `unsafe` code.
 
 ```yaml
 dependencies:
 
-  futures        : { version: ^0.3, default-features: false }
-  futures-channel: ^0.3
+  futures: { version: ^0.3, default-features: false }
 ```
 
 ## Usage
@@ -96,6 +93,8 @@ dependencies:
 Whenever observers want to unsubscribe, they can just drop the stream or call `close` on it. If you are an observable and you want to notify observers that no more messages will follow, just drop the pharos object. Failing that, create an event type that signifies EOF and send that to observers.
 
 Your event type will be cloned once for each observer, so you might want to put it in an Arc if it's bigger than 2 pointer sizes (eg. there's no point putting an enum without data in an Arc).
+
+When you need to notify a pharos object from several async tasks, you can use [`SharedPharos`]. This type allows observing and notifying with a shared reference and handles synchronyzation internally.
 
 Examples can be found in the [examples](https://github.com/najamelan/pharos/tree/master/examples) directory. Here is the most basic one:
 
@@ -150,44 +149,41 @@ enum GoddessEvent
 //
 impl Observable<GoddessEvent> for Goddess
 {
-   type Error = pharos::Error;
+   type Error = PharErr;
 
-   fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Result< Events<GoddessEvent>, Self::Error >
+   fn observe( &mut self, options: ObserveConfig<GoddessEvent>) -> Observe< '_, GoddessEvent, Self::Error >
    {
       self.pharos.observe( options )
    }
 }
 
 
-fn main()
+#[ async_std::main ]
+//
+async fn main()
 {
-   let program = async move
-   {
-      let mut isis = Goddess::new();
+  let mut isis = Goddess::new();
 
-      // subscribe, the observe method takes options to let you choose:
-      // - channel type (bounded/unbounded)
-      // - a predicate to filter events
-      //
-      let mut events = isis.observe( Channel::Bounded( 3 ).into() ).expect( "observe" );
+  // subscribe, the observe method takes options to let you choose:
+  // - channel type (bounded/unbounded)
+  // - a predicate to filter events
+  //
+  let mut events = isis.observe( Channel::Bounded( 3 ).into() ).await.expect( "observe" );
 
-      // trigger an event
-      //
-      isis.sail().await;
+  // trigger an event
+  //
+  isis.sail().await;
 
-      // read from stream and let's put on the console what the event looks like.
-      //
-      let evt = dbg!( events.next().await.unwrap() );
+  // read from stream and let's put on the console what the event looks like.
+  //
+  let evt = dbg!( events.next().await.unwrap() );
 
-      // After this reads on the event stream will return None.
-      //
-      drop( isis );
+  // After this reads on the event stream will return None.
+  //
+  drop( isis );
 
-      assert_eq!( GoddessEvent::Sailing, evt );
-      assert_eq!( None, events.next().await );
-   };
-
-   block_on( program );
+  assert_eq!( GoddessEvent::Sailing, evt );
+  assert_eq!( None, events.next().await );
 }
 ```
 
@@ -214,26 +210,33 @@ struct Connection { pharos: Pharos<NetworkEvent> }
 
 impl Observable<NetworkEvent> for Connection
 {
-   type Error = pharos::Error;
+   type Error = PharErr;
 
-   fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Result< Events<NetworkEvent>, Self::Error >
+   fn observe( &mut self, options: ObserveConfig<NetworkEvent>) -> Observe< '_, NetworkEvent, Self::Error >
    {
        self.pharos.observe( options )
    }
 }
 
-fn main()
+
+#[ async_std::main ]
+//
+async fn main()
 {
    let mut conn = Connection{ pharos: Pharos::default() };
 
-   // We will only get close events.
+   // We will only get close events. Note that here we don't need access to any surrounding variables in
+   // the closure, so we can use a function pointer which avoids having to box the closure.
+   //
+   // Filter also has a variant `Closure` which allows you to pass in a `Box<dyn FnMut(&Event) -> bool + Send>`
+   // if you need access to surrounding context to make the decision.
    //
    let filter = Filter::Pointer( |e| e == &NetworkEvent::Closed );
 
    // By creating the config object through into, other options will be defaults, notably here
    // this will use unbounded channels.
    //
-   let observer = conn.observe( filter.into() ).expect( "observe" );
+   let observer = conn.observe( filter.into() ).await.expect( "observe" );
 
    // Combine both options.
    //
@@ -242,7 +245,7 @@ fn main()
 
    // Get everything but close events over a bounded channel with queue size 5.
    //
-   let bounded_observer = conn.observe( opts );
+   let bounded_observer = conn.observe( opts ).await.expect( "observe" );
 }
 ```
 
@@ -254,9 +257,7 @@ API documentation can be found on [docs.rs](https://docs.rs/pharos).
 
 ## Contributing
 
-This repository accepts contributions. Ideas, questions, feature requests and bug reports can be filed through Github issues.
-
-Pull Requests are welcome on Github. By committing pull requests, you accept that your code might be modified and reformatted to fit the project coding style or to improve the implementation. Please discuss what you want to see modified before filing a pull request if you don't want to be doing work that might be rejected.
+Please check out the [contribution guidelines](https://github.com/najamelan/pharos/blob/master/CONTRIBUTING.md).
 
 
 ### Code of conduct

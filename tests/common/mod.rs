@@ -6,14 +6,16 @@ pub mod import
 	//
 	pub(crate) use
 	{
-		pharos :: { *                                                    } ,
-		std    :: { sync::Arc, thread, task::{ Context, Poll }, pin::Pin } ,
+		pharos          :: { *                                                    } ,
+		std             :: { sync::Arc, thread, task::{ Context, Poll }, pin::Pin } ,
+		async_executors :: AsyncStd ,
 
 		futures ::
 		{
 			channel::mpsc :: Receiver                   ,
 			channel::mpsc :: UnboundedReceiver          ,
 			executor      :: block_on                   ,
+			task          :: { Spawn, SpawnExt }        ,
 			stream        :: Stream, StreamExt, SinkExt ,
 			sink          :: Sink                       ,
 			future        :: poll_fn                    ,
@@ -83,9 +85,9 @@ pub struct NutEvent
 
 impl Observable<IsisEvent> for Goddess
 {
-	type Error = pharos::Error;
+	type Error = PharErr;
 
-	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Result< Events<IsisEvent>, Self::Error >
+	fn observe( &mut self, options: ObserveConfig<IsisEvent> ) -> Observe< '_, IsisEvent, Self::Error >
 	{
 		self.isis.observe( options )
 	}
@@ -94,11 +96,69 @@ impl Observable<IsisEvent> for Goddess
 
 impl Observable<NutEvent> for Goddess
 {
-	type Error = pharos::Error;
+	type Error = PharErr;
 
-	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Result< Events<NutEvent>, Self::Error >
+	fn observe( &mut self, options: ObserveConfig<NutEvent> ) -> Observe< '_, NutEvent, Self::Error >
 	{
 		self.nut.observe( options )
 	}
 }
 
+
+
+
+
+
+
+
+pub struct Shared
+{
+	ph : SharedPharos<SharedEvent>,
+}
+
+
+impl Shared
+{
+	pub fn new() -> Self
+	{
+		Self
+		{
+			ph: SharedPharos::default(),
+		}
+	}
+
+
+	pub fn start( &mut self, exec: impl Spawn )
+	{
+		for _ in 0..4
+		{
+			let ph = self.ph.clone();
+
+			exec.spawn( async move
+			{
+				ph.notify( SharedEvent{ time: "test".into() } ).await.expect( "notify" );
+
+			}).expect( "spawn" );
+		}
+	}
+}
+
+
+
+#[ derive( Clone, Debug, PartialEq ) ]
+//
+pub struct SharedEvent
+{
+	pub time: Arc<str>
+}
+
+
+impl Observable<SharedEvent> for Shared
+{
+	type Error = PharErr;
+
+	fn observe( &mut self, options: ObserveConfig<SharedEvent> ) -> Observe< '_, SharedEvent, Self::Error >
+	{
+		self.ph.observe( options )
+	}
+}

@@ -3,11 +3,11 @@ use crate::{ import::* };
 
 /// The error type for errors happening in `pharos`.
 ///
-/// Use [`Error::kind()`] to know which kind of error happened.
+/// Use [`PharErr::kind()`] to know which kind of error happened.
 //
 #[ derive( Debug ) ]
 //
-pub struct Error
+pub struct PharErr
 {
 	pub(crate) inner: Option< Box<dyn ErrorTrait + Send + Sync> >,
 	pub(crate) kind : ErrorKind,
@@ -15,7 +15,7 @@ pub struct Error
 
 
 
-impl Error
+impl PharErr
 {
 	/// Identify which error happened.
 	//
@@ -26,19 +26,19 @@ impl Error
 }
 
 
-impl From<ErrorKind> for Error
+impl From<ErrorKind> for PharErr
 {
-	fn from( kind: ErrorKind ) -> Error
+	fn from( kind: ErrorKind ) -> Self
 	{
-		Error { inner: None, kind }
+		Self { inner: None, kind }
 	}
 }
 
-impl From<FutSendError> for Error
+impl From<FutSendError> for PharErr
 {
-	fn from( inner: FutSendError ) -> Error
+	fn from( inner: FutSendError ) -> Self
 	{
-		Error { inner: Some( Box::new( inner ) ), kind: ErrorKind::SendError }
+		Self { inner: Some( Box::new( inner ) ), kind: ErrorKind::SendError }
 	}
 }
 
@@ -46,6 +46,7 @@ impl From<FutSendError> for Error
 
 /// The different kind of errors that can happen when you use the `pharos` API.
 //
+#[ non_exhaustive ]
 #[ derive( Debug, Copy, Clone, PartialEq, Eq ) ]
 //
 pub enum ErrorKind
@@ -64,10 +65,6 @@ pub enum ErrorKind
 	/// The minimum valid buffer size for [`Channel::Bounded`](crate::observable::Channel) is `1`, you sent in `0`.
 	//
 	MinChannelSizeOne,
-
-	#[ doc( hidden ) ]
-	//
-	__NonExhaustive__
 }
 
 
@@ -89,10 +86,14 @@ impl PartialEq<ErrorKind> for &ErrorKind
 
 
 
-impl ErrorTrait for Error
+impl ErrorTrait for PharErr
 {
 	fn source( &self ) -> Option< &(dyn ErrorTrait + 'static) >
 	{
+		// Somehow using as_deref gives us thread bound problems...
+		//
+		#[ allow( clippy::option_as_ref_deref ) ]
+		//
 		self.inner.as_ref().map( |e| -> &(dyn ErrorTrait + 'static) { e.deref() } )
 	}
 }
@@ -115,7 +116,7 @@ impl fmt::Display for ErrorKind
 }
 
 
-impl fmt::Display for Error
+impl fmt::Display for PharErr
 {
 	fn fmt( &self, f: &mut fmt::Formatter<'_> ) -> fmt::Result
 	{
@@ -125,7 +126,7 @@ impl fmt::Display for Error
 			None    => String::new()                 ,
 		};
 
-		write!( f, "pharos::Error: {}{}", self.kind, inner )
+		write!( f, "pharos::PharErr: {}{}", self.kind, inner )
 	}
 }
 

@@ -1,9 +1,6 @@
-// See: https://github.com/rust-lang/rust/issues/44732#issuecomment-488766871
-//
-#![ cfg_attr( feature = "external_doc", feature(external_doc)         ) ]
-#![ cfg_attr( feature = "external_doc", doc(include = "../README.md") ) ]
-//!
-
+#![ cfg_attr( nightly, feature( external_doc, doc_cfg    ) ) ]
+#![ cfg_attr( nightly, doc    ( include = "../README.md" ) ) ]
+#![ doc = "" ] // empty doc line to handle missing doc warning when the feature is missing.
 
 #![ doc    ( html_root_url = "https://docs.rs/pharos" ) ]
 #![ deny   ( missing_docs                             ) ]
@@ -26,11 +23,12 @@
 )]
 
 
-mod error      ;
-mod events     ;
-mod observable ;
-mod pharos     ;
-mod filter     ;
+mod error         ;
+mod events        ;
+mod observable    ;
+mod pharos        ;
+mod filter        ;
+mod shared_pharos ;
 
 
 
@@ -40,7 +38,8 @@ pub use
 	filter       :: { Filter                             } ,
 	observable   :: { Observable, ObserveConfig, Channel } ,
 	events       :: { Events                             } ,
-	error        :: { Error, ErrorKind                   } ,
+	error        :: { PharErr, ErrorKind                 } ,
+	shared_pharos:: { SharedPharos                       } ,
 };
 
 
@@ -48,11 +47,11 @@ mod import
 {
 	pub(crate) use
 	{
-		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name } ,
-		std            :: { task::{ Poll, Context }, pin::Pin                           } ,
-		futures        :: { Stream, Sink, ready                                         } ,
+		std            :: { fmt, error::Error as ErrorTrait, ops::Deref, any::type_name  } ,
+		std            :: { task::{ Poll, Context }, pin::Pin, future::Future, sync::Arc } ,
+		futures        :: { Stream, Sink, SinkExt, ready, future::FutureExt, lock::Mutex } ,
 
-		futures_channel::mpsc::
+		futures::channel::mpsc::
 		{
 			self                                      ,
 			Sender            as FutSender            ,
@@ -67,7 +66,14 @@ mod import
 	//
 	pub(crate) use
 	{
-		assert_matches :: { assert_matches                               } ,
-		futures        :: { future::poll_fn, executor::block_on, SinkExt } ,
+		assert_matches :: { assert_matches                      } ,
+		futures        :: { future::poll_fn, executor::block_on } ,
 	};
 }
+
+use import::*;
+
+
+/// A pinned boxed future returned by the Observable::observe method.
+//
+pub type Observe<'a, Event, Error> = Pin<Box< dyn Future< Output = Result<Events<Event>, Error> > + 'a + Send >>;
