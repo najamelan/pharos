@@ -1,5 +1,9 @@
 # Pharos Changelog
 
+## 0.5.1 - 2020-02-18
+
+- Add `ObservableLocal` for observable types that are `!Send`.
+
 ## 0.5.0 - 2020-02-17
 
 - **BREAKING CHANGE**: `Observable::observe` is now an async function. This was needed to make it possible to send

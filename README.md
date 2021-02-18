@@ -1,7 +1,7 @@
 # pharos
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-[![Build Status](https://api.travis-ci.org/najamelan/pharos.svg?branch=master)](https://travis-ci.org/najamelan/pharos)
+[![Build Status](https://github.com/najamelan/pharos/workflows/ci/badge.svg?branch=master)](https://github.com/najamelan/pharos/actions)
 [![Docs](https://docs.rs/pharos/badge.svg)](https://docs.rs/pharos)
 [![Crates.io](https://img.shields.io/crates/v/pharos)](https://crates.io/crates/pharos)
 [![Crates.io downloads](https://img.shields.io/crates/d/pharos)](https://crates.io/crates/pharos)
