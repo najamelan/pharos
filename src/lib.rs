@@ -34,12 +34,12 @@ mod shared_pharos ;
 
 pub use
 {
-	self::pharos :: { Pharos                             } ,
-	filter       :: { Filter                             } ,
-	observable   :: { Observable, ObserveConfig, Channel } ,
-	events       :: { Events                             } ,
-	error        :: { PharErr, ErrorKind                 } ,
-	shared_pharos:: { SharedPharos                       } ,
+	self::pharos :: { Pharos                                              } ,
+	filter       :: { Filter                                              } ,
+	observable   :: { Observable, ObservableLocal, ObserveConfig, Channel } ,
+	events       :: { Events                                              } ,
+	error        :: { PharErr, ErrorKind                                  } ,
+	shared_pharos:: { SharedPharos                                        } ,
 };
 
 
@@ -77,3 +77,7 @@ use import::*;
 /// A pinned boxed future returned by the Observable::observe method.
 //
 pub type Observe<'a, Event, Error> = Pin<Box< dyn Future< Output = Result<Events<Event>, Error> > + 'a + Send >>;
+
+/// A pinned boxed future returned by the ObservableLocal::observe_local method.
+//
+pub type ObserveLocal<'a, Event, Error> = Pin<Box< dyn Future< Output = Result<Events<Event>, Error> > + 'a >>;
