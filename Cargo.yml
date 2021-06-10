@@ -24,7 +24,7 @@ package:
   # - `git tag x.x.x` with version number.
   # - `git push && git push --tags`
   #
-  version       : 0.5.1
+  version       : 0.5.2
   name          : pharos
   authors       : [ Naja Melan <najamelan@autistici.org> ]
   edition       : '2018'
@@ -65,7 +65,7 @@ dev-dependencies:
 
 build-dependencies:
 
-  rustc_version: ^0.2
+  rustc_version: ^0.4
 
 
 profile:
