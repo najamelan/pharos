@@ -190,7 +190,12 @@ impl<Event> Sink<Event> for Pharos<Event> where Event: Clone + 'static + Send
 		}
 
 
-		// As soon as any is not ready, we are not ready
+		// As soon as any is not ready, we are not ready.
+		//
+		// This is a false warning AFAICT. We need to set obs
+		// to None at the end, which is not possible if we have flattened the iterator.
+		//
+		#[allow(clippy::manual_flatten)]
 		//
 		for obs in self.get_mut().observers.iter_mut()
 		{
