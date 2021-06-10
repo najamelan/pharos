@@ -17,11 +17,6 @@ jobs:
             override: true
             components: clippy
 
-      - name: Install nightly
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: nightly
-
 
       - name: Checkout crate
         uses: actions/checkout@v2
