@@ -1,10 +1,19 @@
 # Pharos Changelog
 
-## 0.5.1 - 2020-02-18
+## [0.5.2] - 2021-06-10
+
+[0.5.2]: https://github.com/najamelan/async_executors/compare/0.5.1...0.5.2
+
+### Fixed
+
+  - Remove external_doc for rustdoc 1.54. Thanks to @rajivshah3
+
+
+## 0.5.1 - 2021-02-18
 
 - Add `ObservableLocal` for observable types that are `!Send`.
 
-## 0.5.0 - 2020-02-17
+## 0.5.0 - 2021-02-17
 
 - **BREAKING CHANGE**: `Observable::observe` is now an async function. This was needed to make it possible to send
   events to a pharos object from different async tasks. So far notifying was async, but observing was not. However
