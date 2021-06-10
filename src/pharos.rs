@@ -364,6 +364,8 @@ mod tests
 	// - ✔ start_send filter message
 	// - ✔ poll_flush drop on error
 	//
+	// TODO: fix the assert_matches ambiguity. Can we use assert!( matches!() ) from std?
+	//
 	use crate :: { *, import::* };
 
 	#[test]
@@ -523,14 +525,14 @@ mod tests
 		{
 			let mut ph = Pin::new( &mut ph );
 
-				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+				crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 				assert!( ph.as_mut().start_send( true ).is_ok() );
 
-				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Pending );
+				crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Pending );
 
 				assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(true)));
 
-				assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+				crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 
 			().into()
 
@@ -558,7 +560,7 @@ mod tests
 
 		poll_fn( move |mut cx|
 		{
-			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+			crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 
 			assert!( ph.observers[1].is_none() );
 
@@ -581,11 +583,11 @@ mod tests
 
 			let mut ph = Pin::new( &mut ph );
 
-				assert_matches!( ph.as_mut().poll_close( cx ), Poll::Ready(Ok(())) );
+				crate::assert_matches!( ph.as_mut().poll_close( cx ), Poll::Ready(Ok(())) );
 
 			let res = ph.as_mut().poll_ready( &mut cx );
 
-				assert_matches!( res, Poll::Ready( Err(_) ) );
+				crate::assert_matches!( res, Poll::Ready( Err(_) ) );
 
 				match res
 				{
@@ -616,7 +618,7 @@ mod tests
 		{
 			let mut ph = Pin::new( &mut ph );
 
-			assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+			crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
 			assert!( ph.as_mut().start_send( 3 ).is_ok() );
 
 			assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(3)));
@@ -646,7 +648,7 @@ mod tests
 
 		poll_fn( move |mut cx|
 		{
-			assert_matches!( ph.as_mut().poll_flush( &mut cx ), Poll::Ready( Ok(_) ) );
+			crate::assert_matches!( ph.as_mut().poll_flush( &mut cx ), Poll::Ready( Ok(_) ) );
 
 			assert!( ph.observers[1].is_none() );
 			().into()
