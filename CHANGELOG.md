@@ -1,8 +1,13 @@
 # Pharos Changelog
 
+## [Unreleased]
+
+  [Unreleased]: https://github.com/najamelan/pharos/compare/0.5.2...dev
+
+
 ## [0.5.2] - 2021-06-10
 
-[0.5.2]: https://github.com/najamelan/async_executors/compare/0.5.1...0.5.2
+  [0.5.2]: https://github.com/najamelan/pharos/compare/0.5.1...0.5.2
 
 ### Fixed
 
