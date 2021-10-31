@@ -24,10 +24,10 @@ package:
   # - `git tag x.x.x` with version number.
   # - `git push && git push --tags`
   #
-  version       : 0.5.2
+  version       : 0.5.3
   name          : pharos
   authors       : [ Naja Melan <najamelan@autistici.org> ]
-  edition       : '2018'
+  edition       : '2021'
   readme        : README.md
   license       : Unlicense
   repository    : https://github.com/najamelan/pharos
@@ -52,15 +52,15 @@ badges:
 
 dependencies:
 
-  futures: { version: ^0.3, default-features: false }
+  futures: { version: ^0.3, default-features: false, features: [std] }
 
 
 dev-dependencies:
 
   futures           : ^0.3
   assert_matches    : ^1
-  async-std         : { version: ^1  , features: [attributes] }
-  async_executors   : { version: ^0.4, features: [ async_std ] }
+  async-std         : { version: ^1  , features: [ attributes ] }
+  async_executors   : { version: ^0.4, features: [ async_std  ] }
   wasm-bindgen-test : ^0.3
 
 build-dependencies:
