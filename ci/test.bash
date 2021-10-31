@@ -8,4 +8,5 @@ set -e
 #
 set -x
 
-cargo test --all-features
+cargo          test --all-features
+cargo +nightly test --all-features
