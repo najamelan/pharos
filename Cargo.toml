@@ -12,6 +12,7 @@ rustc_version = "^0.4"
 [dependencies]
 [dependencies.futures]
 default-features = false
+features = ["std"]
 version = "^0.3"
 
 [dev-dependencies]
