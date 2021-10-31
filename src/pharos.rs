@@ -521,18 +521,18 @@ mod tests
 		let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).await.expect( "observe" );
 		let _unbound = ph.observe( Channel::Unbounded      .into() ).await.expect( "observe" );
 
-		poll_fn( move |mut cx|
+		poll_fn( move |cx|
 		{
 			let mut ph = Pin::new( &mut ph );
 
-				crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+				crate::assert_matches!( ph.as_mut().poll_ready( cx ), Poll::Ready( Ok(_) ) );
 				assert!( ph.as_mut().start_send( true ).is_ok() );
 
-				crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Pending );
+				crate::assert_matches!( ph.as_mut().poll_ready( cx ), Poll::Pending );
 
 				assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(true)));
 
-				crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+				crate::assert_matches!( ph.as_mut().poll_ready( cx ), Poll::Ready( Ok(_) ) );
 
 			().into()
 
@@ -558,9 +558,9 @@ mod tests
 		drop( full );
 
 
-		poll_fn( move |mut cx|
+		poll_fn( move |cx|
 		{
-			crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+			crate::assert_matches!( ph.as_mut().poll_ready( cx ), Poll::Ready( Ok(_) ) );
 
 			assert!( ph.observers[1].is_none() );
 
@@ -577,7 +577,7 @@ mod tests
 	//
 	fn poll_ready_closed()
 	{
-		block_on( poll_fn( move |mut cx|
+		block_on( poll_fn( move |cx|
 		{
 			let mut ph = Pharos::<bool>::default();
 
@@ -585,7 +585,7 @@ mod tests
 
 				crate::assert_matches!( ph.as_mut().poll_close( cx ), Poll::Ready(Ok(())) );
 
-			let res = ph.as_mut().poll_ready( &mut cx );
+			let res = ph.as_mut().poll_ready( cx );
 
 				crate::assert_matches!( res, Poll::Ready( Err(_) ) );
 
@@ -614,11 +614,11 @@ mod tests
 		let mut full = ph.observe( Channel::Bounded  ( 1  ).into() ).await.expect( "observe" );
 		let _unbound = ph.observe( Channel::Unbounded      .into() ).await.expect( "observe" );
 
-		poll_fn( move |mut cx|
+		poll_fn( move |cx|
 		{
 			let mut ph = Pin::new( &mut ph );
 
-			crate::assert_matches!( ph.as_mut().poll_ready( &mut cx ), Poll::Ready( Ok(_) ) );
+			crate::assert_matches!( ph.as_mut().poll_ready( cx ), Poll::Ready( Ok(_) ) );
 			assert!( ph.as_mut().start_send( 3 ).is_ok() );
 
 			assert_eq!( Pin::new( &mut full ).poll_next(cx), Poll::Ready(Some(3)));
@@ -646,9 +646,9 @@ mod tests
 
 		drop( full );
 
-		poll_fn( move |mut cx|
+		poll_fn( move |cx|
 		{
-			crate::assert_matches!( ph.as_mut().poll_flush( &mut cx ), Poll::Ready( Ok(_) ) );
+			crate::assert_matches!( ph.as_mut().poll_flush( cx ), Poll::Ready( Ok(_) ) );
 
 			assert!( ph.observers[1].is_none() );
 			().into()
