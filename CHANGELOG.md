@@ -2,8 +2,19 @@
 
 ## [Unreleased]
 
-  [Unreleased]: https://github.com/najamelan/pharos/compare/0.5.2...dev
+  [Unreleased]: https://github.com/najamelan/pharos/compare/0.5.3...dev
 
+
+## [Unreleased]
+
+  [0.5.3]: https://github.com/najamelan/pharos/compare/0.5.2...0.5.3
+
+### Fixed
+
+  - require std feature on futures for channel dependency
+  - improve CI.
+  - update to edition 2021
+  - clean up some rustdoc features
 
 ## [0.5.2] - 2021-06-10
 
