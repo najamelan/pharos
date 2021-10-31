@@ -24,10 +24,10 @@ package:
   # - `git tag x.x.x` with version number.
   # - `git push && git push --tags`
   #
-  version       : 0.5.2
+  version       : 0.5.3
   name          : pharos
   authors       : [ Naja Melan <najamelan@autistici.org> ]
-  edition       : '2018'
+  edition       : '2021'
   readme        : README.md
   license       : Unlicense
   repository    : https://github.com/najamelan/pharos
