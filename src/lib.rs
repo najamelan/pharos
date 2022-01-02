@@ -1,5 +1,5 @@
-#![ cfg_attr( nightly, feature( doc_cfg ) ) ]
-#![ doc = include_str!( "../README.md" ) ]
+#![ cfg_attr( nightly, feature(doc_cfg) ) ]
+#![ doc = include_str!("../README.md") ]
 
 #![ doc    ( html_root_url = "https://docs.rs/pharos" ) ]
 #![ deny   ( missing_docs                             ) ]

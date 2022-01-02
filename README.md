@@ -122,8 +122,9 @@ impl Goddess
    //
    pub async fn sail( &mut self )
    {
-      // It's infallible. Observers that error will be dropped, since the only kind of errors on
-      // channels are when the channel is closed.
+      // In practice it's infallible but this is the interface from futures::Sink. 
+      // Observers that err will be dropped by the pharos object, since the only kind 
+      // of errors on channels are when the channel is closed.
       //
       self.pharos.send( GoddessEvent::Sailing ).await.expect( "notify observers" );
    }
