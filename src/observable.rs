@@ -226,6 +226,8 @@ impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
 {
    /// Choose which channel implementation to use for your event stream.
    //
+   #[ must_use = "Configuration won't do anything if you drop it." ]
+   //
    pub fn channel( mut self, channel: Channel ) -> Self
    {
       self.channel = channel;
@@ -235,6 +237,8 @@ impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
 
    /// Filter your event stream with a predicate that is a fn pointer.
    /// You can only set one filter per observable.
+   //
+   #[ must_use = "Configuration won't do anything if you drop it." ]
    //
    pub fn filter( mut self, filter: fn(&Event) -> bool ) -> Self
    {
@@ -248,6 +252,8 @@ impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
    /// Filter your event stream with a predicate that is a closure that captures environment.
    /// It is preferred to use [filter](ObserveConfig::filter) if you can as this will box the closure.
    /// You can only set one filter per observable.
+   //
+   #[ must_use = "Configuration won't do anything if you drop it." ]
    //
    pub fn filter_boxed( mut self, filter: impl FnMut(&Event) -> bool + Send + 'static ) -> Self
    {
