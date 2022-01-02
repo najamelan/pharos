@@ -73,25 +73,25 @@ use crate :: { Filter, Observe, ObserveLocal };
 //
 pub trait Observable<Event>
 
-   where Event: Clone + 'static + Send ,
+	where Event: Clone + 'static + Send ,
 {
-   /// The error type that is returned if observing is not possible.
-   ///
-   /// [Pharos](crate::Pharos) implements
-   /// [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html)
-   /// which has a close method, so observing will no longer be possible after close is called.
-   ///
-   /// Other than that, you might want to have moments in your objects lifetime when you don't want to take
-   /// any more observers. Returning a result from [observe](Observable::observe) enables that.
-   ///
-   /// You can of course map the error of pharos to your own error type.
-   //
-   type Error: std::error::Error;
+	/// The error type that is returned if observing is not possible.
+	///
+	/// [Pharos](crate::Pharos) implements
+	/// [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html)
+	/// which has a close method, so observing will no longer be possible after close is called.
+	///
+	/// Other than that, you might want to have moments in your objects lifetime when you don't want to take
+	/// any more observers. Returning a result from [observe](Observable::observe) enables that.
+	///
+	/// You can of course map the error of pharos to your own error type.
+	//
+	type Error: std::error::Error;
 
-   /// Add an observer to the observable. Options allow chosing the channel type and
-   /// to filter events with a predicate.
-   //
-   fn observe( &mut self, options: ObserveConfig<Event> ) -> Observe<'_, Event, Self::Error >;
+	/// Add an observer to the observable. Options allow chosing the channel type and
+	/// to filter events with a predicate.
+	//
+	fn observe( &mut self, options: ObserveConfig<Event> ) -> Observe<'_, Event, Self::Error >;
 }
 
 
@@ -99,25 +99,25 @@ pub trait Observable<Event>
 //
 pub trait ObservableLocal<Event>
 
-   where Event: Clone + 'static + Send ,
+	where Event: Clone + 'static + Send ,
 {
-   /// The error type that is returned if observing is not possible.
-   ///
-   /// [Pharos](crate::Pharos) implements
-   /// [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html)
-   /// which has a close method, so observing will no longer be possible after close is called.
-   ///
-   /// Other than that, you might want to have moments in your objects lifetime when you don't want to take
-   /// any more observers. Returning a result from [observe](Observable::observe) enables that.
-   ///
-   /// You can of course map the error of pharos to your own error type.
-   //
-   type Error: std::error::Error;
+	/// The error type that is returned if observing is not possible.
+	///
+	/// [Pharos](crate::Pharos) implements
+	/// [Sink](https://docs.rs/futures-preview/0.3.0-alpha.19/futures/sink/trait.Sink.html)
+	/// which has a close method, so observing will no longer be possible after close is called.
+	///
+	/// Other than that, you might want to have moments in your objects lifetime when you don't want to take
+	/// any more observers. Returning a result from [observe](Observable::observe) enables that.
+	///
+	/// You can of course map the error of pharos to your own error type.
+	//
+	type Error: std::error::Error;
 
-   /// Add an observer to the observable. Options allow chosing the channel type and
-   /// to filter events with a predicate.
-   //
-   fn observe_local( &mut self, options: ObserveConfig<Event> ) -> ObserveLocal<'_, Event, Self::Error >;
+	/// Add an observer to the observable. Options allow chosing the channel type and
+	/// to filter events with a predicate.
+	//
+	fn observe_local( &mut self, options: ObserveConfig<Event> ) -> ObserveLocal<'_, Event, Self::Error >;
 }
 
 
@@ -129,30 +129,30 @@ pub trait ObservableLocal<Event>
 pub enum Channel
 {
 
-   /// A channel with a limited message queue (the usize parameter). Creates back pressure when the buffer is full.
-   /// This means that producer tasks may block if consumers can't process fast enough.
-   ///
-   /// The minimum valid buffer size is 1.
-   //
-   Bounded(usize),
+	/// A channel with a limited message queue (the usize parameter). Creates back pressure when the buffer is full.
+	/// This means that producer tasks may block if consumers can't process fast enough.
+	///
+	/// The minimum valid buffer size is 1.
+	//
+	Bounded(usize),
 
-   /// A channel with unbounded capacity. Note that this may lead to unbounded memory consumption if producers
-   /// outpace consumers.
-   //
-   Unbounded,
+	/// A channel with unbounded capacity. Note that this may lead to unbounded memory consumption if producers
+	/// outpace consumers.
+	//
+	Unbounded,
 
-   /// This enum might grow in the future, thanks to this that won't be a breaking change.
-   //
-   __NonExhaustive__
+	/// This enum might grow in the future, thanks to this that won't be a breaking change.
+	//
+	__NonExhaustive__
 }
 
 
 impl Default for Channel
 {
-   fn default() -> Self
-   {
-      Channel::Unbounded
-   }
+	fn default() -> Self
+	{
+		Channel::Unbounded
+	}
 }
 
 
@@ -198,8 +198,8 @@ impl Default for Channel
 //
 pub struct ObserveConfig<Event> where Event: Clone + 'static + Send
 {
-   pub(crate) channel: Channel,
-   pub(crate) filter : Option<Filter<Event>>,
+	pub(crate) channel: Channel,
+	pub(crate) filter : Option<Filter<Event>>,
 }
 
 
@@ -210,58 +210,58 @@ pub struct ObserveConfig<Event> where Event: Clone + 'static + Send
 //
 impl<Event> Default for ObserveConfig<Event> where Event: Clone + 'static + Send
 {
-   fn default() -> Self
-   {
-      Self
-      {
-         channel: Channel::default(),
-         filter : None              ,
-      }
-   }
+	fn default() -> Self
+	{
+		Self
+		{
+			channel: Channel::default(),
+			filter : None              ,
+		}
+	}
 }
 
 
 
 impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
 {
-   /// Choose which channel implementation to use for your event stream.
-   //
-   #[ must_use = "Configuration won't do anything if you drop it." ]
-   //
-   pub fn channel( mut self, channel: Channel ) -> Self
-   {
-      self.channel = channel;
-      self
-   }
+	/// Choose which channel implementation to use for your event stream.
+	//
+	#[ must_use = "Configuration won't do anything if you drop it." ]
+	//
+	pub fn channel( mut self, channel: Channel ) -> Self
+	{
+		self.channel = channel;
+		self
+	}
 
 
-   /// Filter your event stream with a predicate that is a fn pointer.
-   /// You can only set one filter per observable.
-   //
-   #[ must_use = "Configuration won't do anything if you drop it." ]
-   //
-   pub fn filter( mut self, filter: fn(&Event) -> bool ) -> Self
-   {
-      debug_assert!( self.filter.is_none(), "You can only set one filter on ObserveConfig" );
+	/// Filter your event stream with a predicate that is a fn pointer.
+	/// You can only set one filter per observable.
+	//
+	#[ must_use = "Configuration won't do anything if you drop it." ]
+	//
+	pub fn filter( mut self, filter: fn(&Event) -> bool ) -> Self
+	{
+		debug_assert!( self.filter.is_none(), "You can only set one filter on ObserveConfig" );
 
-      self.filter = Some( Filter::Pointer(filter) );
-      self
-   }
+		self.filter = Some( Filter::Pointer(filter) );
+		self
+	}
 
 
-   /// Filter your event stream with a predicate that is a closure that captures environment.
-   /// It is preferred to use [filter](ObserveConfig::filter) if you can as this will box the closure.
-   /// You can only set one filter per observable.
-   //
-   #[ must_use = "Configuration won't do anything if you drop it." ]
-   //
-   pub fn filter_boxed( mut self, filter: impl FnMut(&Event) -> bool + Send + 'static ) -> Self
-   {
-      debug_assert!( self.filter.is_none(), "You can only set one filter on ObserveConfig" );
+	/// Filter your event stream with a predicate that is a closure that captures environment.
+	/// It is preferred to use [filter](ObserveConfig::filter) if you can as this will box the closure.
+	/// You can only set one filter per observable.
+	//
+	#[ must_use = "Configuration won't do anything if you drop it." ]
+	//
+	pub fn filter_boxed( mut self, filter: impl FnMut(&Event) -> bool + Send + 'static ) -> Self
+	{
+		debug_assert!( self.filter.is_none(), "You can only set one filter on ObserveConfig" );
 
-      self.filter = Some( Filter::Closure( Box::new(filter) ) );
-      self
-   }
+		self.filter = Some( Filter::Closure( Box::new(filter) ) );
+		self
+	}
 }
 
 
@@ -269,10 +269,10 @@ impl<Event> ObserveConfig<Event> where Event: Clone + 'static + Send
 //
 impl<Event> From<Channel> for ObserveConfig<Event> where Event: Clone + 'static + Send
 {
-   fn from( channel: Channel ) -> Self
-   {
-      Self::default().channel( channel )
-   }
+	fn from( channel: Channel ) -> Self
+	{
+		Self::default().channel( channel )
+	}
 }
 
 
@@ -280,12 +280,12 @@ impl<Event> From<Channel> for ObserveConfig<Event> where Event: Clone + 'static 
 //
 impl<Event> From<Filter<Event>> for ObserveConfig<Event> where Event: Clone + 'static + Send
 {
-   fn from( filter: Filter<Event> ) -> Self
-   {
-      Self
-      {
-         filter: Some(filter),
-         ..Self::default()
-      }
-   }
+	fn from( filter: Filter<Event> ) -> Self
+	{
+		Self
+		{
+			filter: Some(filter),
+			..Self::default()
+		}
+	}
 }
