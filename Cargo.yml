@@ -60,7 +60,7 @@ dev-dependencies:
   futures           : ^0.3
   assert_matches    : ^1
   async-std         : { version: ^1  , features: [ attributes ] }
-  async_executors   : { version: ^0.4, features: [ async_std  ] }
+  async_executors   : { version: ^0.6, features: [ async_std  ] }
   wasm-bindgen-test : ^0.3
 
 build-dependencies:
